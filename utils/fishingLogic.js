@@ -1,25 +1,29 @@
 import { fishTypes, totalWeight } from './fishTypes.js';
 
 /**
- * Chọn cá ngẫu nhiên dựa trên weight và rod level
+ * Chọn cá ngẫu nhiên dựa trên weight, rod level và bonus
  * @param {number} rodLevel - Cấp độ cần câu
+ * @param {number} rareFishBonus - Bonus cá hiếm từ môi trường/sự kiện
  * @returns {object} - Loại cá được chọn
  */
-export function selectRandomFish(rodLevel = 1) {
+export function selectRandomFish(rodLevel = 1, rareFishBonus = 0) {
   // Bonus luck dựa trên rod level (tăng cơ hội cá hiếm)
   const luckBonus = Math.max(0, (rodLevel - 1) * 0.1); // 10% bonus per level
   
-  // Điều chỉnh weight dựa trên rod level
+  // Tổng bonus cá hiếm
+  const totalRareBonus = luckBonus + rareFishBonus;
+  
+  // Điều chỉnh weight dựa trên rod level và bonus
   const adjustedFish = fishTypes.map(fish => {
     let adjustedWeight = fish.weight;
     
-    // Tăng cơ hội cá hiếm với rod level cao hơn
+    // Tăng cơ hội cá hiếm với rod level và bonus từ môi trường
     if (fish.rarity === 'rare') {
-      adjustedWeight *= (1 + luckBonus * 0.5); // 5% per level cho rare
+      adjustedWeight *= (1 + totalRareBonus * 0.5); // 50% hiệu quả cho rare
     } else if (fish.rarity === 'legendary') {
-      adjustedWeight *= (1 + luckBonus * 1); // 10% per level cho legendary  
+      adjustedWeight *= (1 + totalRareBonus * 1); // 100% hiệu quả cho legendary  
     } else if (fish.rarity === 'mythical') {
-      adjustedWeight *= (1 + luckBonus * 2); // 20% per level cho mythical
+      adjustedWeight *= (1 + totalRareBonus * 2); // 200% hiệu quả cho mythical
     }
     
     return { ...fish, adjustedWeight };

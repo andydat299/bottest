@@ -14,6 +14,9 @@ import {
   getDurabilityEmoji,
   getDurabilityStatus 
 } from '../utils/durabilityManager.js';
+import { getCurrentWeather, getEnvironmentModifiers } from '../utils/weatherSystem.js';
+import { getEventModifiers, getEventSpecialFish, getEventDisplayInfo } from '../utils/seasonalEvents.js';
+import { getAvailableLocations, canFishAtLocation } from '../utils/fishingLocations.js';
 
 export default {
   data: new SlashCommandBuilder().setName('fish').setDescription('Câu cá 🎣'),
@@ -89,6 +92,25 @@ export default {
       await user.save();
     }
 
+    // Lấy thông tin môi trường và sự kiện
+    const weatherInfo = getCurrentWeather();
+    const environmentModifiers = getEnvironmentModifiers(weatherInfo.weather, weatherInfo.timeOfDay);
+    const eventModifiers = getEventModifiers();
+    const eventInfo = getEventDisplayInfo();
+    
+    // Lấy địa điểm câu cá hiện tại (mặc định là LAKE nếu chưa có)
+    const currentLocation = user.currentFishingLocation || 'LAKE';
+    const availableLocations = getAvailableLocations(user.rodLevel || 1);
+    const locationAccess = canFishAtLocation(currentLocation, user.rodLevel || 1);
+    
+    if (!locationAccess.canFish) {
+      clearFishingCooldown(discordId);
+      return interaction.reply({
+        content: `🚫 **Không thể câu cá tại địa điểm này!**\n\n📍 **${currentLocation}**: ${locationAccess.reason}\n\n💡 Sử dụng lệnh \`/location\` để chọn địa điểm khác.`,
+        ephemeral: true
+      });
+    }
+
     const clicksNeeded = Math.floor(Math.random() * 3) + 2;
 
     // Đặt cooldown ngay khi bắt đầu câu cá
@@ -96,13 +118,24 @@ export default {
 
     const feeInfo = totalAttempts >= FREE_ATTEMPTS ? `💰 Phí: ${FISHING_FEE} xu` : `🆓 Miễn phí (${FREE_ATTEMPTS - totalAttempts} lần còn lại)`;
     
+    // Thông tin môi trường
+    const environmentInfo = [
+      `${weatherInfo.weatherEmoji} ${weatherInfo.weather} - ${weatherInfo.timeEmoji} ${weatherInfo.timeOfDay}`,
+      `📍 Đang câu tại: **${currentLocation}**`
+    ];
+    
+    // Thông tin sự kiện (nếu có)
+    if (eventInfo.hasEvents) {
+      environmentInfo.push(`🌟 **${eventInfo.count} sự kiện đang hoạt động!**`);
+    }
+    
     // Hiển thị thông tin độ bền
     const durabilityEmoji = getDurabilityEmoji(user.rodDurability, user.rodMaxDurability);
     const durabilityPercent = Math.round((user.rodDurability / user.rodMaxDurability) * 100);
     const durabilityInfo = `${durabilityEmoji} Độ bền: ${user.rodDurability}/${user.rodMaxDurability} (${durabilityPercent}%)`;
 
     const msg = await interaction.reply({
-      content: `🎣 Nhấn **${clicksNeeded} lần** để câu cá!\n${feeInfo}\n${durabilityInfo}\n⏰ *Cooldown: 20 giây*`,
+      content: `🎣 Nhấn **${clicksNeeded} lần** để câu cá!\n${feeInfo}\n${environmentInfo.join('\n')}\n${durabilityInfo}\n⏰ *Cooldown: 20 giây*`,
       components: [getFishButtons()],
       fetchReply: true
     });
@@ -145,7 +178,7 @@ export default {
         // Cập nhật thống kê câu cá
         user.fishingStats.totalFishingAttempts = (user.fishingStats.totalFishingAttempts || 0) + 1;
 
-        // Tính tỷ lệ câu hụt (20% base, giảm theo rod level)
+        // Tính tỷ lệ câu hụt với các hệ số môi trường và sự kiện
         const baseMissRate = 0.20; // 20% cơ bản
         const rodLevel = user.rodLevel || 1;
         const missRateReduction = (rodLevel - 1) * 0.02; // Giảm 2% mỗi level
@@ -154,7 +187,13 @@ export default {
         // Áp dụng hệ số hiệu suất từ độ bền
         const efficiency = getDurabilityEfficiency(user.rodDurability, user.rodMaxDurability);
         finalMissRate = finalMissRate * (2 - efficiency); // Độ bền thấp tăng tỷ lệ hụt
+        
+        // Áp dụng hệ số từ môi trường và sự kiện
+        const totalFishRateMultiplier = environmentModifiers.fishRateMultiplier * eventModifiers.fishRateMultiplier;
+        finalMissRate = finalMissRate / totalFishRateMultiplier; // Hệ số tốt giảm tỷ lệ hụt
+        
         finalMissRate = Math.min(finalMissRate, 0.8); // Tối đa 80% hụt
+        finalMissRate = Math.max(finalMissRate, 0.02); // Tối thiểu 2%
         
         const missRatePercent = (finalMissRate * 100).toFixed(1);
         
@@ -190,8 +229,13 @@ export default {
           const durabilityWarning = user.rodDurability <= 20 ? '\n⚠️ **Cảnh báo:** Cần câu sắp hỏng!' : '';
           const brokenWarning = user.rodDurability <= 0 ? '\n💥 **Cần câu đã hỏng!** Sử dụng `/repair` để sửa chữa.' : '';
           
+          const environmentEffects = [];
+          if (totalFishRateMultiplier !== 1.0) {
+            environmentEffects.push(`🌤️ Hiệu ứng môi trường: ${Math.round(totalFishRateMultiplier * 100)}%`);
+          }
+          
           await interaction.editReply({
-            content: `${randomMessage}\n\n📊 Tỷ lệ câu hụt: **${missRatePercent}%**\n🔧 Độ bền giảm: **${durabilityLoss}**\n💡 Nâng cấp cần câu để giảm tỷ lệ câu hụt!${durabilityWarning}${brokenWarning}`,
+            content: `${randomMessage}\n\n📊 Tỷ lệ câu hụt: **${missRatePercent}%**\n🔧 Độ bền giảm: **${durabilityLoss}**\n${environmentEffects.join('\n')}\n💡 Nâng cấp cần câu để giảm tỷ lệ câu hụt!${durabilityWarning}${brokenWarning}`,
             components: []
           });
           return;
@@ -201,11 +245,31 @@ export default {
         console.log(`✅ ${interaction.user.username} câu thành công!`);
         user.fishingStats.successfulCatches = (user.fishingStats.successfulCatches || 0) + 1;
         
-        // Sử dụng hệ thống câu cá mới với weight
-        const fish = selectRandomFish(rodLevel);
+        // Kiểm tra cá đặc biệt từ sự kiện trước
+        let fish = getEventSpecialFish();
+        
+        if (!fish) {
+          // Sử dụng hệ thống câu cá thông thường với hệ số từ môi trường
+          const totalRareFishBonus = environmentModifiers.rareFishBonus + eventModifiers.rareFishBonus;
+          fish = selectRandomFish(rodLevel, totalRareFishBonus);
+        }
 
         const fishCount = user.fish.get(fish.name) || 0;
         user.fish.set(fish.name, fishCount + 1);
+        
+        // Tính kinh nghiệm và xu với hệ số
+        const baseExperience = fish.experience || 10;
+        const baseCoins = fish.price;
+        
+        const totalExpMultiplier = environmentModifiers.experienceMultiplier * eventModifiers.experienceMultiplier;
+        const totalCoinMultiplier = environmentModifiers.coinMultiplier * eventModifiers.coinMultiplier;
+        
+        const finalExperience = Math.round(baseExperience * totalExpMultiplier);
+        const finalCoins = Math.round(baseCoins * totalCoinMultiplier);
+        
+        user.experience = (user.experience || 0) + finalExperience;
+        user.balance += finalCoins;
+        
         await user.save();
 
         // Log câu cá thành công
@@ -244,15 +308,46 @@ export default {
         };
         
         const emoji = rarityEmoji[fish.rarity] || '🐟';
-        let message = `${emoji} Bạn đã bắt được **${fish.name}** (💰 ${fish.price} xu)!`;
+        let message = `${emoji} Bạn đã bắt được **${fish.name}**!`;
         
-        // Thêm thông báo đặc biệt cho cá hiếm
-        if (fish.rarity === 'mythical') {
+        // Thông tin phần thưởng
+        const rewardInfo = [];
+        if (finalCoins !== baseCoins) {
+          rewardInfo.push(`💰 ${finalCoins} xu (x${totalCoinMultiplier.toFixed(1)})`);
+        } else {
+          rewardInfo.push(`💰 ${finalCoins} xu`);
+        }
+        
+        if (finalExperience !== baseExperience) {
+          rewardInfo.push(`📈 ${finalExperience} EXP (x${totalExpMultiplier.toFixed(1)})`);
+        } else {
+          rewardInfo.push(`📈 ${finalExperience} EXP`);
+        }
+        
+        message += `\n${rewardInfo.join(' • ')}`;
+        
+        // Thêm thông báo đặc biệt cho cá hiếm hoặc cá event
+        if (fish.isEventFish) {
+          message += `\n🌟 **CÁ SỰ KIỆN!** ${fish.eventEmoji} ${fish.eventName}`;
+        } else if (fish.rarity === 'mythical') {
           message += '\n🎉 **CỰC HIẾM!** Bạn đã câu được cá huyền thoại! 🎉';
         } else if (fish.rarity === 'legendary') {
           message += '\n✨ **HIẾM!** Cá huyền thoại đã xuất hiện!';
         } else if (fish.rarity === 'rare') {
           message += '\n💎 Cá hiếm đấy!';
+        }
+
+        // Hiệu ứng môi trường và sự kiện
+        const effectInfo = [];
+        if (totalFishRateMultiplier !== 1.0) {
+          effectInfo.push(`🎣 Tỷ lệ câu: x${totalFishRateMultiplier.toFixed(1)}`);
+        }
+        if (environmentModifiers.rareFishBonus + eventModifiers.rareFishBonus > 0) {
+          effectInfo.push(`✨ Cá hiếm: +${Math.round((environmentModifiers.rareFishBonus + eventModifiers.rareFishBonus) * 100)}%`);
+        }
+        
+        if (effectInfo.length > 0) {
+          message += `\n🌤️ ${effectInfo.join(' • ')}`;
         }
 
         // Thông báo về độ bền

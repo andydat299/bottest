@@ -5,6 +5,8 @@ const userSchema = new mongoose.Schema({
   rodLevel: { type: Number, default: 1 },
   rodDurability: { type: Number, default: 100 }, // Độ bền cần câu (0-100)
   rodMaxDurability: { type: Number, default: 100 }, // Độ bền tối đa
+  currentFishingLocation: { type: String, default: 'LAKE' }, // Địa điểm câu cá hiện tại
+  experience: { type: Number, default: 0 }, // Kinh nghiệm
   fish: { type: Map, of: Number, default: {} },
   balance: { type: Number, default: 0 },
   totalSold: { type: Number, default: 0 },
