@@ -36,16 +36,11 @@ export function calculateDurabilityLoss(rodLevel, isMiss = false) {
  * @param {number} rodLevel - Cấp cần câu
  * @param {number} currentDurability - Độ bền hiện tại
  * @param {number} maxDurability - Độ bền tối đa
- * @returns {number} - Phí sửa chữa
+ * @returns {number} - Phí sửa chữa cố định
  */
 export function calculateRepairCost(rodLevel, currentDurability, maxDurability) {
-  const damagePercent = 1 - (currentDurability / maxDurability);
-  
-  // Phí cơ bản theo rod level
-  const baseCost = rodLevel * 50;
-  
-  // Tăng theo % hư hỏng
-  return Math.floor(baseCost * damagePercent);
+  // Phí sửa chữa cố định 150 xu cho mọi cấp độ
+  return 150;
 }
 
 /**
