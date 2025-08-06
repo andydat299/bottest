@@ -62,23 +62,22 @@ try {
   
   console.log(`📤 Deploying ${commands.length} commands...`);
   
-  // Deploy globally (takes up to 1 hour to update)
-  await rest.put(
-    Routes.applicationCommands(config.clientId),
-    { body: commands },
-  );
-  
-  console.log(`✅ Successfully deployed ${commands.length} global commands.`);
-  console.log('⏰ Global commands may take up to 1 hour to appear.');
-  
-  // Also deploy to guild for instant updates (if guild ID is provided)
+  // Ưu tiên guild commands nếu có guild ID (instant), nếu không thì dùng global
   if (config.guildId) {
-    console.log('🏃‍♂️ Also deploying to guild for instant updates...');
+    console.log('🏃‍♂️ Deploying to guild (instant)...');
     await rest.put(
       Routes.applicationGuildCommands(config.clientId, config.guildId),
       { body: commands },
     );
     console.log(`✅ Guild commands deployed instantly to server ${config.guildId}`);
+  } else {
+    console.log('� Deploying globally (takes up to 1 hour)...');
+    await rest.put(
+      Routes.applicationCommands(config.clientId),
+      { body: commands },
+    );
+    console.log(`✅ Successfully deployed ${commands.length} global commands.`);
+    console.log('⏰ Global commands may take up to 1 hour to appear.');
   }
   
 } catch (error) {
