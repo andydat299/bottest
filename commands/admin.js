@@ -13,6 +13,13 @@ import {
   getEventSystemStatus,
   activateSpecialEvent 
 } from '../utils/seasonalEvents.js';
+import {
+  disableCommand,
+  enableCommand,
+  getCommandStatus,
+  getControllableCommands,
+  resetAllCommands
+} from '../utils/commandControl.js';
 
 export default {
   data: new SlashCommandBuilder()
@@ -82,6 +89,56 @@ export default {
             .setDescription('Xem trạng thái hệ thống sự kiện')
         )
     )
+    .addSubcommandGroup(group =>
+      group.setName('command')
+        .setDescription('Quản lý bật/tắt lệnh')
+        .addSubcommand(subcommand =>
+          subcommand.setName('disable')
+            .setDescription('Tắt một lệnh cụ thể')
+            .addStringOption(option =>
+              option.setName('command')
+                .setDescription('Tên lệnh cần tắt')
+                .setRequired(true)
+                .addChoices(
+                  { name: 'sell - Bán cá', value: 'sell' },
+                  { name: 'fish - Câu cá', value: 'fish' },
+                  { name: 'upgrade - Nâng cấp', value: 'upgrade' },
+                  { name: 'repair - Sửa chữa', value: 'repair' },
+                  { name: 'inventory - Túi đồ', value: 'inventory' },
+                  { name: 'stats - Thống kê', value: 'stats' },
+                  { name: 'profile - Hồ sơ', value: 'profile' },
+                  { name: 'quests - Nhiệm vụ', value: 'quests' }
+                )
+            )
+        )
+        .addSubcommand(subcommand =>
+          subcommand.setName('enable')
+            .setDescription('Bật lại một lệnh')
+            .addStringOption(option =>
+              option.setName('command')
+                .setDescription('Tên lệnh cần bật')
+                .setRequired(true)
+                .addChoices(
+                  { name: 'sell - Bán cá', value: 'sell' },
+                  { name: 'fish - Câu cá', value: 'fish' },
+                  { name: 'upgrade - Nâng cấp', value: 'upgrade' },
+                  { name: 'repair - Sửa chữa', value: 'repair' },
+                  { name: 'inventory - Túi đồ', value: 'inventory' },
+                  { name: 'stats - Thống kê', value: 'stats' },
+                  { name: 'profile - Hồ sơ', value: 'profile' },
+                  { name: 'quests - Nhiệm vụ', value: 'quests' }
+                )
+            )
+        )
+        .addSubcommand(subcommand =>
+          subcommand.setName('status')
+            .setDescription('Xem trạng thái tất cả lệnh')
+        )
+        .addSubcommand(subcommand =>
+          subcommand.setName('reset')
+            .setDescription('Bật lại tất cả lệnh')
+        )
+    )
     .addSubcommand(subcommand =>
       subcommand.setName('status')
         .setDescription('Xem trạng thái tổng quan tất cả hệ thống')
@@ -104,6 +161,8 @@ export default {
         await handleWeatherCommands(interaction, subcommand);
       } else if (group === 'event') {
         await handleEventCommands(interaction, subcommand);
+      } else if (group === 'command') {
+        await handleCommandControls(interaction, subcommand);
       } else if (subcommand === 'status') {
         await handleOverallStatus(interaction);
       }
@@ -197,6 +256,7 @@ async function handleEventCommands(interaction, subcommand) {
 async function handleOverallStatus(interaction) {
   const weatherStatus = getSystemStatus();
   const eventStatus = getEventSystemStatus();
+  const commandStatus = getCommandStatus();
   
   const embed = new EmbedBuilder()
     .setTitle('⚙️ Trạng thái tổng quan hệ thống')
@@ -212,6 +272,11 @@ async function handleOverallStatus(interaction) {
         inline: false
       },
       {
+        name: '🎮 Hệ thống Commands',
+        value: `Enabled: ${commandStatus.enabledCount}/${commandStatus.totalCommands}\nDisabled: ${commandStatus.disabledCount} lệnh`,
+        inline: false
+      },
+      {
         name: '📊 Thống kê',
         value: `Sự kiện hoạt động: ${eventStatus.activeEventsCount}`,
         inline: false
@@ -221,5 +286,93 @@ async function handleOverallStatus(interaction) {
     .setTimestamp()
     .setFooter({ text: 'Sử dụng /admin để quản lý hệ thống' });
   
+  if (commandStatus.disabledList.length > 0) {
+    embed.addFields({
+      name: '🔒 Lệnh bị tắt',
+      value: commandStatus.disabledList.map(cmd => `/${cmd}`).join(', '),
+      inline: false
+    });
+  }
+  
   await interaction.reply({ embeds: [embed] });
+}
+
+// Command Control Handler
+async function handleCommandControls(interaction, subcommand) {
+  const commandName = interaction.options.getString('command');
+  
+  switch (subcommand) {
+    case 'disable':
+      const disableResult = disableCommand(commandName);
+      await interaction.reply({
+        content: disableResult.success ? `✅ ${disableResult.message}` : `❌ ${disableResult.message}`,
+        ephemeral: true
+      });
+      break;
+      
+    case 'enable':
+      const enableResult = enableCommand(commandName);
+      await interaction.reply({
+        content: enableResult.success ? `✅ ${enableResult.message}` : `❌ ${enableResult.message}`,
+        ephemeral: true
+      });
+      break;
+      
+    case 'status':
+      const status = getCommandStatus();
+      
+      const statusEmbed = new EmbedBuilder()
+        .setTitle('🎮 Trạng thái Commands')
+        .addFields(
+          {
+            name: '📊 Tổng quan',
+            value: `Total: ${status.totalCommands}\nEnabled: ${status.enabledCount}\nDisabled: ${status.disabledCount}`,
+            inline: false
+          }
+        )
+        .setColor(0x3498db)
+        .setTimestamp();
+        
+      // Thêm danh sách lệnh
+      const commandList = Object.entries(status.commands)
+        .map(([cmd, stat]) => `/${cmd}: ${stat}`)
+        .join('\n');
+        
+      statusEmbed.addFields({
+        name: '📋 Chi tiết Commands',
+        value: commandList || 'Không có lệnh nào',
+        inline: false
+      });
+      
+      if (status.disabledList.length > 0) {
+        statusEmbed.addFields({
+          name: '🔒 Lệnh bị tắt',
+          value: status.disabledList.map(cmd => `/${cmd}`).join(', '),
+          inline: false
+        });
+      }
+        
+      await interaction.reply({ embeds: [statusEmbed] });
+      break;
+      
+    case 'reset':
+      const resetResult = resetAllCommands();
+      
+      const resetEmbed = new EmbedBuilder()
+        .setTitle('🔄 Reset Commands')
+        .setDescription(resetResult.message)
+        .setColor(0x2ecc71)
+        .setTimestamp();
+        
+      if (resetResult.resetCommands.length > 0) {
+        resetEmbed.addFields({
+          name: '✅ Lệnh đã được bật lại',
+          value: resetResult.resetCommands.map(cmd => `/${cmd}`).join(', '),
+          inline: false
+        });
+      }
+        
+      await interaction.reply({ embeds: [resetEmbed], ephemeral: true });
+      break;
+  }
 }

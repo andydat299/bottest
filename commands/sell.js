@@ -2,12 +2,21 @@ import { SlashCommandBuilder } from 'discord.js';
 import { User } from '../schemas/userSchema.js';
 import { fishTypes } from '../utils/fishTypes.js';
 import { updateQuestProgress } from '../utils/questManager.js';
+import { isCommandDisabled } from '../utils/commandControl.js';
 
 export default {
   data: new SlashCommandBuilder().setName('sell').setDescription('Bán toàn bộ cá để lấy tiền'),
   prefixEnabled: true, // Cho phép sử dụng với prefix
 
   async execute(interaction) {
+    // Kiểm tra lệnh có bị disable không
+    if (isCommandDisabled('sell')) {
+      return interaction.reply({
+        content: '🔒 **Lệnh sell hiện đang bị tắt!**\n\n💡 *Admin đã tạm thời vô hiệu hóa tính năng bán cá.*',
+        ephemeral: true
+      });
+    }
+
     const user = await User.findOne({ discordId: interaction.user.id });
     if (!user || user.fish.size === 0) {
       return interaction.reply({ content: '🐟 Bạn không có cá nào để bán.' });
