@@ -119,6 +119,7 @@ export default {
         const rodLevel = user.rodLevel || 1;
         const missRateReduction = (rodLevel - 1) * 0.02; // Giảm 2% mỗi level
         const finalMissRate = Math.max(baseMissRate - missRateReduction, 0.05); // Tối thiểu 5%
+        const missRatePercent = (finalMissRate * 100).toFixed(1);
         
         const isMiss = Math.random() < finalMissRate;
         

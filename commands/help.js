@@ -19,7 +19,7 @@ export default {
         },
         {
           name: '👤 Lệnh thông tin',
-          value: '• `/profile` hoặc `f!profile` - Xem hồ sơ cá nhân\n• `/fishstats` hoặc `f!fishstats` - Thống kê câu cá chi tiết\n• `/list` - Xem danh sách tất cả loại cá\n• `/stats` - Xem thống kê cộng đồng\n• `/rates` - Xem cá có thể câu được\n• `/chatstats` hoặc `f!chatstats` - Xem thống kê chat',
+          value: '• `/profile` hoặc `f!profile` - Xem hồ sơ cá nhân\n• `/fishstats` hoặc `f!fishstats` - Thống kê câu cá chi tiết\n• `/list` - Xem danh sách tất cả loại cá\n• `/stats` - Xem thống kê cộng đồng\n• `/rates` - Xem cá có thể câu được\n• `/missrates` - Xem tỷ lệ câu hụt chi tiết\n• `/chatstats` hoặc `f!chatstats` - Xem thống kê chat',
           inline: true
         },
         {

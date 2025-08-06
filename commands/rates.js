@@ -5,25 +5,39 @@ import { getFishProbabilities } from '../utils/fishingLogic.js';
 export default {
   data: new SlashCommandBuilder()
     .setName('rates')
-    .setDescription('Xem danh sách cá có thể câu được theo cấp độ cần câu �'),
+    .setDescription('Xem danh sách cá có thể câu được theo cấp độ cần câu 🎣'),
 
   async execute(interaction) {
     // Lấy thông tin user để biết rod level
     const user = await User.findOne({ discordId: interaction.user.id }) || await User.create({ discordId: interaction.user.id });
     const rodLevel = user.rodLevel || 1;
 
+    // Tính tỷ lệ câu hụt
+    const baseMissRate = 0.20; // 20% cơ bản
+    const missRateReduction = (rodLevel - 1) * 0.02; // Giảm 2% mỗi level
+    const finalMissRate = Math.max(baseMissRate - missRateReduction, 0.05); // Tối thiểu 5%
+    const missRatePercent = (finalMissRate * 100).toFixed(1);
+    const successRate = (100 - parseFloat(missRatePercent)).toFixed(1);
+
     // Lấy tỷ lệ theo rod level hiện tại
     const probabilities = getFishProbabilities(rodLevel);
 
     const embed = new EmbedBuilder()
       .setColor('#FFA500')
-      .setTitle('� Danh sách cá có thể câu được')
-      .setDescription(`**Cần câu cấp ${rodLevel}** - Các loại cá bạn có thể câu được:`)
+      .setTitle('🎣 Danh sách cá có thể câu được')
+      .setDescription(`**Cần câu cấp ${rodLevel}** - Tỷ lệ và thông tin câu cá:`)
       .setTimestamp()
       .setFooter({ 
         text: `${interaction.user.username} - Rod Level ${rodLevel}`, 
         iconURL: interaction.user.displayAvatarURL() 
       });
+
+    // Thêm thông tin tỷ lệ thành công/thất bại
+    embed.addFields({
+      name: '📊 Tỷ lệ câu cá',
+      value: `🎯 **Tỷ lệ thành công:** ${successRate}%\n❌ **Tỷ lệ câu hụt:** ${missRatePercent}%\n\n💡 *Nâng cấp cần câu để giảm tỷ lệ câu hụt!*`,
+      inline: false
+    });
 
     // Nhóm theo rarity
     const rarityGroups = {
