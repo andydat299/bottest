@@ -1,6 +1,8 @@
 import { updateQuestProgress } from '../utils/questManager.js';
 import { User } from '../schemas/userSchema.js';
 import { config } from '../config.js';
+import { processChatMessage } from '../utils/chatRewards.js';
+import { EmbedBuilder } from 'discord.js';
 
 export default {
   name: 'messageCreate',
@@ -86,6 +88,24 @@ export default {
         await updateQuestProgress(message.author.id, 'chat', 1, { 
           channelId: message.channel.id 
         });
+
+        // Xử lý chat rewards
+        const rewardResult = await processChatMessage(message);
+        if (rewardResult && rewardResult.success) {
+          const rewardEmbed = new EmbedBuilder()
+            .setTitle('💰 Chat Reward!')
+            .setDescription(`**${rewardResult.username}** nhận được **${rewardResult.coins.toLocaleString()} xu** từ chat!`)
+            .addFields(
+              { name: '💎 Số dư mới', value: `${rewardResult.newBalance.toLocaleString()} xu`, inline: true },
+              { name: '🎯 Tỉ lệ', value: '1%', inline: true },
+              { name: '📍 Kênh', value: `#${rewardResult.channel}`, inline: true }
+            )
+            .setColor('#ffdd57')
+            .setTimestamp();
+          
+          // Gửi tin nhắn thông báo
+          await message.reply({ embeds: [rewardEmbed] });
+        }
 
         // Log để debug (có thể bỏ sau)
         console.log(`📱 ${message.author.username} đã chat ${todayCount + 1} tin nhắn hôm nay tại sảnh`);

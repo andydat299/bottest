@@ -29,6 +29,10 @@ const userSchema = new mongoose.Schema({
     totalMessages: { type: Number, default: 0 },
     dailyMessages: { type: Map, of: Number, default: {} }, // Format: 'YYYY-MM-DD' -> count
     lastMessageDate: { type: String, default: '' }
+  },
+  stats: {
+    totalChatRewards: { type: Number, default: 0 }, // Tổng xu nhận từ chat
+    chatRewardCount: { type: Number, default: 0 }   // Số lần nhận thưởng chat
   }
 });
 

@@ -27,6 +27,15 @@ import {
   setPenaltyMultiplier,
   getPenaltySystemStatus
 } from '../utils/fishingPenalty.js';
+import {
+  toggleChatRewards,
+  setChatDropRate,
+  setChatRewardRange,
+  setChatCooldown,
+  getChatRewardConfig,
+  clearUserCooldown,
+  clearAllCooldowns
+} from '../utils/chatRewards.js';
 
 export default {
   data: new SlashCommandBuilder()
@@ -184,6 +193,71 @@ export default {
             .setDescription('Xem trạng thái hệ thống phạt xu')
         )
     )
+    .addSubcommandGroup(group =>
+      group.setName('chat')
+        .setDescription('Quản lý hệ thống chat rewards')
+        .addSubcommand(subcommand =>
+          subcommand.setName('toggle')
+            .setDescription('Bật/tắt hệ thống chat rewards')
+        )
+        .addSubcommand(subcommand =>
+          subcommand.setName('set-rate')
+            .setDescription('Đặt tỉ lệ rơi xu chat')
+            .addNumberOption(option =>
+              option.setName('rate')
+                .setDescription('Tỉ lệ rơi (0.001-1.0, VD: 0.01 = 1%)')
+                .setRequired(true)
+                .setMinValue(0.001)
+                .setMaxValue(1.0)
+            )
+        )
+        .addSubcommand(subcommand =>
+          subcommand.setName('set-range')
+            .setDescription('Đặt khoảng xu thưởng')
+            .addIntegerOption(option =>
+              option.setName('min')
+                .setDescription('Xu tối thiểu (1-99999)')
+                .setRequired(true)
+                .setMinValue(1)
+                .setMaxValue(99999)
+            )
+            .addIntegerOption(option =>
+              option.setName('max')
+                .setDescription('Xu tối đa (2-100000)')
+                .setRequired(true)
+                .setMinValue(2)
+                .setMaxValue(100000)
+            )
+        )
+        .addSubcommand(subcommand =>
+          subcommand.setName('set-cooldown')
+            .setDescription('Đặt thời gian cooldown')
+            .addIntegerOption(option =>
+              option.setName('seconds')
+                .setDescription('Cooldown (1-3600 giây)')
+                .setRequired(true)
+                .setMinValue(1)
+                .setMaxValue(3600)
+            )
+        )
+        .addSubcommand(subcommand =>
+          subcommand.setName('clear-cooldown')
+            .setDescription('Xóa cooldown của user')
+            .addUserOption(option =>
+              option.setName('user')
+                .setDescription('User cần xóa cooldown')
+                .setRequired(true)
+            )
+        )
+        .addSubcommand(subcommand =>
+          subcommand.setName('clear-all')
+            .setDescription('Xóa tất cả cooldown')
+        )
+        .addSubcommand(subcommand =>
+          subcommand.setName('status')
+            .setDescription('Xem trạng thái hệ thống chat rewards')
+        )
+    )
     .addSubcommand(subcommand =>
       subcommand.setName('status')
         .setDescription('Xem trạng thái tổng quan tất cả hệ thống')
@@ -210,7 +284,7 @@ export default {
         await handleCommandControls(interaction, subcommand);
       } else if (group === 'fishing') {
         if (subcommand === 'penalty-enable') {
-          const enabled = enableFishingPenalty();
+          const enabled = enablePenaltySystem();
           if (enabled) {
             const statusEmbed = new EmbedBuilder()
               .setTitle('🟢 Hệ Thống Phạt Xu Đã Bật')
@@ -223,7 +297,7 @@ export default {
             await interaction.reply('Hệ thống phạt xu đã được bật từ trước.');
           }
         } else if (subcommand === 'penalty-disable') {
-          const disabled = disableFishingPenalty();
+          const disabled = disablePenaltySystem();
           if (disabled) {
             const statusEmbed = new EmbedBuilder()
               .setTitle('🔴 Hệ Thống Phạt Xu Đã Tắt')
@@ -264,7 +338,7 @@ export default {
             await interaction.reply('Không thể cập nhật hệ số phạt xu.');
           }
         } else if (subcommand === 'status') {
-          const status = getFishingPenaltyStatus();
+          const status = getPenaltySystemStatus();
           const statusEmbed = new EmbedBuilder()
             .setTitle('📊 Trạng Thái Hệ Thống Phạt Xu')
             .addFields(
@@ -276,6 +350,101 @@ export default {
               { name: '🎣 Bonus cần câu', value: '0-10 xu thêm', inline: true }
             )
             .setColor(status.enabled ? '#00ff00' : '#ff0000')
+            .setTimestamp();
+          
+          await interaction.reply({ embeds: [statusEmbed] });
+        }
+      } else if (group === 'chat') {
+        if (subcommand === 'toggle') {
+          const result = toggleChatRewards();
+          const statusEmbed = new EmbedBuilder()
+            .setTitle(result.enabled ? '🟢 Chat Rewards Đã Bật' : '🔴 Chat Rewards Đã Tắt')
+            .setDescription(result.message)
+            .setColor(result.enabled ? '#00ff00' : '#ff0000')
+            .setTimestamp();
+          
+          await interaction.reply({ embeds: [statusEmbed] });
+        } else if (subcommand === 'set-rate') {
+          const rate = interaction.options.getNumber('rate');
+          const result = setChatDropRate(rate);
+          
+          if (result.success) {
+            const statusEmbed = new EmbedBuilder()
+              .setTitle('📊 Đã Cập Nhật Tỉ Lệ Rơi Xu')
+              .setDescription(result.message)
+              .setColor('#00ff00')
+              .setTimestamp();
+            
+            await interaction.reply({ embeds: [statusEmbed] });
+          } else {
+            await interaction.reply(result.message);
+          }
+        } else if (subcommand === 'set-range') {
+          const min = interaction.options.getInteger('min');
+          const max = interaction.options.getInteger('max');
+          const result = setChatRewardRange(min, max);
+          
+          if (result.success) {
+            const statusEmbed = new EmbedBuilder()
+              .setTitle('💰 Đã Cập Nhật Khoảng Xu Thưởng')
+              .setDescription(result.message)
+              .setColor('#00ff00')
+              .setTimestamp();
+            
+            await interaction.reply({ embeds: [statusEmbed] });
+          } else {
+            await interaction.reply(result.message);
+          }
+        } else if (subcommand === 'set-cooldown') {
+          const seconds = interaction.options.getInteger('seconds');
+          const result = setChatCooldown(seconds);
+          
+          if (result.success) {
+            const statusEmbed = new EmbedBuilder()
+              .setTitle('⏱️ Đã Cập Nhật Cooldown')
+              .setDescription(result.message)
+              .setColor('#00ff00')
+              .setTimestamp();
+            
+            await interaction.reply({ embeds: [statusEmbed] });
+          } else {
+            await interaction.reply(result.message);
+          }
+        } else if (subcommand === 'clear-cooldown') {
+          const user = interaction.options.getUser('user');
+          const result = clearUserCooldown(user.id);
+          
+          const statusEmbed = new EmbedBuilder()
+            .setTitle('🧹 Xóa Cooldown User')
+            .setDescription(`${result.message}\n**User:** ${user.username}`)
+            .setColor('#00ff00')
+            .setTimestamp();
+          
+          await interaction.reply({ embeds: [statusEmbed] });
+        } else if (subcommand === 'clear-all') {
+          const result = clearAllCooldowns();
+          
+          const statusEmbed = new EmbedBuilder()
+            .setTitle('🧹 Xóa Tất Cả Cooldown')
+            .setDescription(result.message)
+            .setColor('#00ff00')
+            .setTimestamp();
+          
+          await interaction.reply({ embeds: [statusEmbed] });
+        } else if (subcommand === 'status') {
+          const config = getChatRewardConfig();
+          
+          const statusEmbed = new EmbedBuilder()
+            .setTitle('💬 Trạng Thái Chat Rewards')
+            .addFields(
+              { name: '⚡ Trạng thái', value: config.enabled ? '🟢 Bật' : '🔴 Tắt', inline: true },
+              { name: '🎯 Tỉ lệ rơi', value: `${config.dropRatePercent}%`, inline: true },
+              { name: '💰 Khoảng xu', value: `${config.minCoins}-${config.maxCoins} xu`, inline: true },
+              { name: '⏱️ Cooldown', value: `${config.cooldownSeconds}s`, inline: true },
+              { name: '👥 Cooldowns hiện tại', value: `${config.activeCooldowns} user`, inline: true },
+              { name: '📍 Kênh', value: `<#${config.channelId}>`, inline: true }
+            )
+            .setColor(config.enabled ? '#00ff00' : '#ff0000')
             .setTimestamp();
           
           await interaction.reply({ embeds: [statusEmbed] });
