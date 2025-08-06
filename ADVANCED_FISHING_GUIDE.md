@@ -15,25 +15,25 @@ Bot câu cá đã được nâng cấp với 4 hệ thống mới để tạo ra
 
 ### Các Loại Thời Tiết:
 
-| Thời Tiết | Emoji | Hiệu Ứng | Đặc Điểm |
-|-----------|-------|-----------|----------|
-| **Nắng** | ☀️ | Tỷ lệ câu ổn định | Thích hợp người mới |
-| **Mây** | ☁️ | Tỷ lệ câu +10% | Cân bằng tốt |
-| **Mưa** | 🌧️ | Tỷ lệ câu +20%, Cá hiếm +5% | Tốt cho cá hiếm |
-| **Bão** | ⛈️ | Cá hiếm +15%, Giảm tỷ lệ câu | Rủi ro cao, phần thưởng lớn |
-| **Sương Mù** | 🌫️ | Giảm tỷ lệ câu -20%, Cá hiếm +10% | Khó khăn nhưng có cá hiếm |
-| **Gió** | 💨 | Tỷ lệ câu +5%, EXP +10% | Tốt cho farm kinh nghiệm |
+| Thời Tiết | Emoji | Hiệu Ứng | Đặc Điểm | Cá Đặc Biệt |
+|-----------|-------|-----------|----------|-------------|
+| **Nắng** | ☀️ | Tỷ lệ câu ổn định | Thích hợp người mới | Cá Vàng Ánh Nắng, Cá Chép Hoàng Kim |
+| **Mây** | ☁️ | Tỷ lệ câu +10% | Cân bằng tốt | Cá Mây Bạc |
+| **Mưa** | 🌧️ | Tỷ lệ câu +30%, Cá hiếm +10%, EXP +10% | Tốt cho cá hiếm | Cá Mưa Ngọc Trai, Cá Sấm Sét |
+| **Bão** | ⛈️ | Cá hiếm +20%, Giảm tỷ lệ câu -30%, EXP +50%, Xu +20% | Rủi ro cao, phần thưởng lớn | Cá Sấm Sét Điện, Rồng Bão Tố |
+| **Sương Mù** | 🌫️ | Giảm tỷ lệ câu -10%, Cá hiếm +15%, EXP +30%, Xu +10% | Khó khăn nhưng có cá hiếm | Cá Ma Sương Mù, Linh Hồn Sương Trắng |
+| **Gió** | 💨 | Tỷ lệ câu +20%, Cá hiếm +8%, EXP +10% | Tốt cho farm kinh nghiệm | Cá Bay Gió Xanh, Phượng Hoàng Gió |
 
 ### Thời Gian Trong Ngày:
 
-| Thời Gian | Emoji | Giờ | Hiệu Ứng |
-|-----------|-------|-----|-----------|
-| **Bình Minh** | 🌅 | 5:00-7:00 | EXP +30% |
-| **Sáng** | 🌞 | 7:00-11:00 | Hiệu ứng cơ bản |
-| **Trưa** | ☀️ | 11:00-15:00 | Giảm tỷ lệ câu -10% |
-| **Chiều** | 🌇 | 15:00-18:00 | Hiệu ứng cơ bản |
-| **Hoàng Hôn** | 🌆 | 18:00-20:00 | EXP +20% |
-| **Đêm** | 🌙 | 20:00-5:00 | Cá đêm đặc biệt |
+| Thời Gian | Emoji | Giờ | Hiệu Ứng | Cá Đặc Biệt |
+|-----------|-------|-----|-----------|-------------|
+| **Bình Minh** | 🌅 | 5:00-7:00 | EXP +30%, Tỷ lệ câu +20%, Cá hiếm +10% | Cá Bình Minh Vàng, Thiên Thần Ánh Sáng |
+| **Sáng** | 🌞 | 7:00-11:00 | EXP +10%, Tỷ lệ câu +10%, Cá hiếm +5% | Cá Sáng Trong |
+| **Trưa** | ☀️ | 11:00-15:00 | Giảm tỷ lệ câu -20%, EXP -10% | Cá Ngủ Trưa |
+| **Chiều** | 🌇 | 15:00-18:00 | Hiệu ứng cơ bản, Cá hiếm +3% | Cá Chiều Tím |
+| **Hoàng Hôn** | 🌆 | 18:00-20:00 | EXP +20%, Tỷ lệ câu +15%, Cá hiếm +8% | Cá Đêm Xanh, Ma Cà Rồng Biển |
+| **Đêm** | 🌙 | 20:00-5:00 | Cá hiếm +15%, EXP +50%, Xu +20% | Cá Ma Đêm, Quỷ Vương Biển Đêm |
 
 ### Lệnh Weather:
 - `/weather current` - Xem thời tiết hiện tại
@@ -144,8 +144,8 @@ Khi câu cá, bot sẽ hiển thị:
 ### Ví Dụ Combo Mạnh:
 
 **🌟 Combo Cá Hiếm Tối Đa:**
-- 🌧️ Thời tiết Bão (+15% cá hiếm)
-- 🌙 Đêm khuya (cá đêm đặc biệt)
+- ⛈️ Thời tiết Bão (+20% cá hiếm, có Rồng Bão Tố)
+- 🌙 Đêm khuya (+15% cá hiếm, có Quỷ Vương Biển Đêm)
 - ✨ Ao Sen Huyền Bí (+25% cá hiếm)
 - ❄️ Event Mùa Đông (+25% cá hiếm)
 - 🎣 Cần câu cấp cao
@@ -154,7 +154,13 @@ Khi câu cá, bot sẽ hiển thị:
 - ☀️ Thời tiết Nắng (ổn định)
 - 🌊 Đại Dương (địa điểm tốt)
 - 🍂 Event Thu Hoạch (+40% xu)
-- 🌇 Giờ Chiều (thời gian tốt)
+- � Đêm (+20% xu)
+
+**🎣 Combo Cá Đặc Biệt:**
+- 🌫️ Sương Mù (có Linh Hồn Sương Trắng)
+- 🌅 Bình Minh (có Thiên Thần Ánh Sáng)
+- 🧧 Event Tết (có Rồng Vàng Phú Quý)
+- 🎃 Halloween đêm (có Quái Vật Đáy Biển)
 
 ---
 
@@ -204,12 +210,13 @@ Khi câu cá, bot sẽ hiển thị:
 ## 🎯 Lộ Trình Phát Triển
 
 ### Đã Hoàn Thành:
-- ✅ Weather System
-- ✅ Time-based Fishing  
-- ✅ Fishing Locations
-- ✅ Seasonal Events
-- ✅ Integration với Fish Command
-- ✅ Admin Tools cho Events
+- ✅ Weather System với 6 loại thời tiết và cá đặc biệt
+- ✅ Time-based Fishing với 6 khung giờ và cá theo thời gian
+- ✅ Fishing Locations với 7 địa điểm và cá độc quyền
+- ✅ Seasonal Events với events tự động và đặc biệt
+- ✅ Integration với Fish Command có hỗ trợ đầy đủ
+- ✅ Admin Tools cho Events và Weather
+- ✅ Hệ thống cá hiếm theo thời tiết và thời gian
 
 ### Tính Năng Có Thể Mở Rộng:
 - 🔄 Thêm loại thời tiết mới

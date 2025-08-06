@@ -14,7 +14,7 @@ import {
   getDurabilityEmoji,
   getDurabilityStatus 
 } from '../utils/durabilityManager.js';
-import { getCurrentWeather, getEnvironmentModifiers } from '../utils/weatherSystem.js';
+import { getCurrentWeather, getEnvironmentModifiers, getWeatherSpecialFish } from '../utils/weatherSystem.js';
 import { getEventModifiers, getEventSpecialFish, getEventDisplayInfo } from '../utils/seasonalEvents.js';
 import { getAvailableLocations, canFishAtLocation } from '../utils/fishingLocations.js';
 
@@ -94,9 +94,34 @@ export default {
 
     // Lấy thông tin môi trường và sự kiện
     const weatherInfo = getCurrentWeather();
-    const environmentModifiers = getEnvironmentModifiers(weatherInfo.weather, weatherInfo.timeOfDay);
-    const eventModifiers = getEventModifiers();
+    let environmentModifiers = getEnvironmentModifiers(weatherInfo.weather, weatherInfo.timeOfDay);
+    let eventModifiers = getEventModifiers();
     const eventInfo = getEventDisplayInfo();
+    
+    // Debug logging để kiểm tra giá trị
+    console.log('Environment modifiers:', environmentModifiers);
+    console.log('Event modifiers:', eventModifiers);
+    
+    // Validate modifiers để tránh NaN
+    if (!environmentModifiers || typeof environmentModifiers !== 'object') {
+      console.error('Invalid environment modifiers:', environmentModifiers);
+      environmentModifiers = {
+        fishRateMultiplier: 1.0,
+        rareFishBonus: 0,
+        experienceMultiplier: 1.0,
+        coinMultiplier: 1.0
+      };
+    }
+    
+    if (!eventModifiers || typeof eventModifiers !== 'object') {
+      console.error('Invalid event modifiers:', eventModifiers);
+      eventModifiers = {
+        fishRateMultiplier: 1.0,
+        rareFishBonus: 0,
+        experienceMultiplier: 1.0,
+        coinMultiplier: 1.0
+      };
+    }
     
     // Lấy địa điểm câu cá hiện tại (mặc định là LAKE nếu chưa có)
     const currentLocation = user.currentFishingLocation || 'LAKE';
@@ -188,9 +213,17 @@ export default {
         const efficiency = getDurabilityEfficiency(user.rodDurability, user.rodMaxDurability);
         finalMissRate = finalMissRate * (2 - efficiency); // Độ bền thấp tăng tỷ lệ hụt
         
-        // Áp dụng hệ số từ môi trường và sự kiện
-        const totalFishRateMultiplier = environmentModifiers.fishRateMultiplier * eventModifiers.fishRateMultiplier;
-        finalMissRate = finalMissRate / totalFishRateMultiplier; // Hệ số tốt giảm tỷ lệ hụt
+        // Áp dụng hệ số từ môi trường và sự kiện (với validation)
+        const safeFishRateMultiplier = (environmentModifiers.fishRateMultiplier && !isNaN(environmentModifiers.fishRateMultiplier)) 
+          ? environmentModifiers.fishRateMultiplier : 1.0;
+        const safeEventFishRateMultiplier = (eventModifiers.fishRateMultiplier && !isNaN(eventModifiers.fishRateMultiplier)) 
+          ? eventModifiers.fishRateMultiplier : 1.0;
+          
+        const totalFishRateMultiplier = safeFishRateMultiplier * safeEventFishRateMultiplier;
+        
+        if (!isNaN(totalFishRateMultiplier) && totalFishRateMultiplier > 0) {
+          finalMissRate = finalMissRate / totalFishRateMultiplier; // Hệ số tốt giảm tỷ lệ hụt
+        }
         
         finalMissRate = Math.min(finalMissRate, 0.8); // Tối đa 80% hụt
         finalMissRate = Math.max(finalMissRate, 0.02); // Tối thiểu 2%
@@ -245,30 +278,75 @@ export default {
         console.log(`✅ ${interaction.user.username} câu thành công!`);
         user.fishingStats.successfulCatches = (user.fishingStats.successfulCatches || 0) + 1;
         
-        // Kiểm tra cá đặc biệt từ sự kiện trước
-        let fish = getEventSpecialFish();
+        // Kiểm tra cá đặc biệt theo thứ tự ưu tiên
+        let fish = getEventSpecialFish(); // Ưu tiên cá event
         
         if (!fish) {
-          // Sử dụng hệ thống câu cá thông thường với hệ số từ môi trường
-          const totalRareFishBonus = environmentModifiers.rareFishBonus + eventModifiers.rareFishBonus;
+          fish = getWeatherSpecialFish(); // Tiếp theo là cá thời tiết/thời gian
+        }
+        
+        if (!fish) {
+          // Sử dụng hệ thống câu cá thông thường với hệ số từ môi trường (với validation)
+          const envRareBonus = (environmentModifiers.rareFishBonus && !isNaN(environmentModifiers.rareFishBonus)) 
+            ? environmentModifiers.rareFishBonus : 0;
+          const eventRareBonus = (eventModifiers.rareFishBonus && !isNaN(eventModifiers.rareFishBonus)) 
+            ? eventModifiers.rareFishBonus : 0;
+          const totalRareFishBonus = envRareBonus + eventRareBonus;
           fish = selectRandomFish(rodLevel, totalRareFishBonus);
         }
 
         const fishCount = user.fish.get(fish.name) || 0;
         user.fish.set(fish.name, fishCount + 1);
         
-        // Tính kinh nghiệm và xu với hệ số
+        // Tính kinh nghiệm và xu với hệ số (với validation)
         const baseExperience = fish.experience || 10;
-        const baseCoins = fish.price;
+        const baseCoins = fish.price || 50;
         
-        const totalExpMultiplier = environmentModifiers.experienceMultiplier * eventModifiers.experienceMultiplier;
-        const totalCoinMultiplier = environmentModifiers.coinMultiplier * eventModifiers.coinMultiplier;
+        // Đảm bảo các multiplier là số hợp lệ
+        const safeExpMultiplier = (environmentModifiers.experienceMultiplier && !isNaN(environmentModifiers.experienceMultiplier)) 
+          ? environmentModifiers.experienceMultiplier : 1.0;
+        const safeEventExpMultiplier = (eventModifiers.experienceMultiplier && !isNaN(eventModifiers.experienceMultiplier)) 
+          ? eventModifiers.experienceMultiplier : 1.0;
+        const safeCoinMultiplier = (environmentModifiers.coinMultiplier && !isNaN(environmentModifiers.coinMultiplier)) 
+          ? environmentModifiers.coinMultiplier : 1.0;
+        const safeEventCoinMultiplier = (eventModifiers.coinMultiplier && !isNaN(eventModifiers.coinMultiplier)) 
+          ? eventModifiers.coinMultiplier : 1.0;
+        
+        const totalExpMultiplier = safeExpMultiplier * safeEventExpMultiplier;
+        const totalCoinMultiplier = safeCoinMultiplier * safeEventCoinMultiplier;
         
         const finalExperience = Math.round(baseExperience * totalExpMultiplier);
         const finalCoins = Math.round(baseCoins * totalCoinMultiplier);
         
-        user.experience = (user.experience || 0) + finalExperience;
-        user.balance += finalCoins;
+        // Validation trước khi lưu - đảm bảo không có NaN
+        const safeExperience = isNaN(finalExperience) || !isFinite(finalExperience) ? baseExperience : finalExperience;
+        const safeCoins = isNaN(finalCoins) || !isFinite(finalCoins) ? baseCoins : finalCoins;
+        
+        console.log('Final reward calculation:', {
+          baseExperience,
+          baseCoins,
+          totalExpMultiplier,
+          totalCoinMultiplier,
+          finalExperience,
+          finalCoins,
+          safeExperience,
+          safeCoins
+        });
+        
+        if (isNaN(safeExperience) || isNaN(safeCoins)) {
+          console.error('❌ CRITICAL: NaN detected even after safety checks!', {
+            safeExperience,
+            safeCoins,
+            environmentModifiers,
+            eventModifiers
+          });
+          // Absolute fallback
+          user.experience = (user.experience || 0) + 10;
+          user.balance = (user.balance || 0) + 50;
+        } else {
+          user.experience = (user.experience || 0) + safeExperience;
+          user.balance = (user.balance || 0) + safeCoins;
+        }
         
         await user.save();
 
@@ -310,18 +388,23 @@ export default {
         const emoji = rarityEmoji[fish.rarity] || '🐟';
         let message = `${emoji} Bạn đã bắt được **${fish.name}**!`;
         
-        // Thông tin phần thưởng
+        // Thông tin phần thưởng (sử dụng giá trị đã validation)
+        const displayExperience = isNaN(finalExperience) ? baseExperience : finalExperience;
+        const displayCoins = isNaN(finalCoins) ? baseCoins : finalCoins;
+        const displayExpMultiplier = isNaN(totalExpMultiplier) ? 1.0 : totalExpMultiplier;
+        const displayCoinMultiplier = isNaN(totalCoinMultiplier) ? 1.0 : totalCoinMultiplier;
+        
         const rewardInfo = [];
-        if (finalCoins !== baseCoins) {
-          rewardInfo.push(`💰 ${finalCoins} xu (x${totalCoinMultiplier.toFixed(1)})`);
+        if (displayCoins !== baseCoins && displayCoinMultiplier !== 1.0) {
+          rewardInfo.push(`💰 ${displayCoins} xu (x${displayCoinMultiplier.toFixed(1)})`);
         } else {
-          rewardInfo.push(`💰 ${finalCoins} xu`);
+          rewardInfo.push(`💰 ${displayCoins} xu`);
         }
         
-        if (finalExperience !== baseExperience) {
-          rewardInfo.push(`📈 ${finalExperience} EXP (x${totalExpMultiplier.toFixed(1)})`);
+        if (displayExperience !== baseExperience && displayExpMultiplier !== 1.0) {
+          rewardInfo.push(`📈 ${displayExperience} EXP (x${displayExpMultiplier.toFixed(1)})`);
         } else {
-          rewardInfo.push(`📈 ${finalExperience} EXP`);
+          rewardInfo.push(`📈 ${displayExperience} EXP`);
         }
         
         message += `\n${rewardInfo.join(' • ')}`;
@@ -329,6 +412,10 @@ export default {
         // Thêm thông báo đặc biệt cho cá hiếm hoặc cá event
         if (fish.isEventFish) {
           message += `\n🌟 **CÁ SỰ KIỆN!** ${fish.eventEmoji} ${fish.eventName}`;
+        } else if (fish.isWeatherFish) {
+          message += `\n🌤️ **CÁ THỜI TIẾT!** ${fish.weatherEmoji} ${fish.weatherType}`;
+        } else if (fish.isTimeFish) {
+          message += `\n🕐 **CÁ THỜI GIAN!** ${fish.timeEmoji} ${fish.timeType}`;
         } else if (fish.rarity === 'mythical') {
           message += '\n🎉 **CỰC HIẾM!** Bạn đã câu được cá huyền thoại! 🎉';
         } else if (fish.rarity === 'legendary') {
@@ -337,13 +424,20 @@ export default {
           message += '\n💎 Cá hiếm đấy!';
         }
 
-        // Hiệu ứng môi trường và sự kiện
+        // Hiệu ứng môi trường và sự kiện (với validation)
         const effectInfo = [];
-        if (totalFishRateMultiplier !== 1.0) {
+        if (!isNaN(totalFishRateMultiplier) && totalFishRateMultiplier !== 1.0) {
           effectInfo.push(`🎣 Tỷ lệ câu: x${totalFishRateMultiplier.toFixed(1)}`);
         }
-        if (environmentModifiers.rareFishBonus + eventModifiers.rareFishBonus > 0) {
-          effectInfo.push(`✨ Cá hiếm: +${Math.round((environmentModifiers.rareFishBonus + eventModifiers.rareFishBonus) * 100)}%`);
+        
+        const envRareBonus = (environmentModifiers.rareFishBonus && !isNaN(environmentModifiers.rareFishBonus)) 
+          ? environmentModifiers.rareFishBonus : 0;
+        const eventRareBonus = (eventModifiers.rareFishBonus && !isNaN(eventModifiers.rareFishBonus)) 
+          ? eventModifiers.rareFishBonus : 0;
+        const totalRareBonus = envRareBonus + eventRareBonus;
+        
+        if (totalRareBonus > 0) {
+          effectInfo.push(`✨ Cá hiếm: +${Math.round(totalRareBonus * 100)}%`);
         }
         
         if (effectInfo.length > 0) {

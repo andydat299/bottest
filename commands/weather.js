@@ -39,12 +39,12 @@ export async function execute(interaction) {
 }
 
 async function showCurrentWeather(interaction) {
-    const weatherInfo = getCurrentWeather();
-    const modifiers = getEnvironmentModifiers(weatherInfo.weather, weatherInfo.timeOfDay);
+    const environmentModifiers = getEnvironmentModifiers();
+    const { weather, timePeriod } = environmentModifiers;
     const eventInfo = getEventDisplayInfo();
     
     const embed = new EmbedBuilder()
-        .setColor(getWeatherColor(weatherInfo.weather))
+        .setColor(getWeatherColor(weather.name))
         .setTitle('🌤️ Thông Tin Môi Trường Hiện Tại')
         .setTimestamp();
     
@@ -52,39 +52,39 @@ async function showCurrentWeather(interaction) {
     embed.addFields(
         {
             name: '🌤️ Thời Tiết',
-            value: `${weatherInfo.weatherEmoji} **${weatherInfo.weather}**\n${weatherInfo.description}`,
+            value: `${weather.emoji} **${weather.name}**\n${weather.description}`,
             inline: true
         },
         {
             name: '🕐 Thời Gian',
-            value: `${weatherInfo.timeEmoji} **${weatherInfo.timeOfDay}**\n${weatherInfo.timeDescription}`,
+            value: `${timePeriod.emoji} **${timePeriod.name}**\n${timePeriod.description}`,
             inline: true
         }
     );
     
     // Hiệu ứng môi trường
     const effectInfo = [];
-    if (modifiers.fishRateMultiplier !== 1.0) {
-        const sign = modifiers.fishRateMultiplier > 1.0 ? '+' : '';
-        const percent = Math.round((modifiers.fishRateMultiplier - 1) * 100);
+    if (environmentModifiers.fishRateMultiplier !== 1.0) {
+        const sign = environmentModifiers.fishRateMultiplier > 1.0 ? '+' : '';
+        const percent = Math.round((environmentModifiers.fishRateMultiplier - 1) * 100);
         effectInfo.push(`🎣 Tỷ lệ câu cá: ${sign}${percent}%`);
     }
     
-    if (modifiers.rareFishBonus !== 0) {
-        const sign = modifiers.rareFishBonus > 0 ? '+' : '';
-        const percent = Math.round(modifiers.rareFishBonus * 100);
+    if (environmentModifiers.rareFishBonus !== 0) {
+        const sign = environmentModifiers.rareFishBonus > 0 ? '+' : '';
+        const percent = Math.round(environmentModifiers.rareFishBonus * 100);
         effectInfo.push(`✨ Cá hiếm: ${sign}${percent}%`);
     }
     
-    if (modifiers.experienceMultiplier !== 1.0) {
-        const sign = modifiers.experienceMultiplier > 1.0 ? '+' : '';
-        const percent = Math.round((modifiers.experienceMultiplier - 1) * 100);
+    if (environmentModifiers.experienceMultiplier !== 1.0) {
+        const sign = environmentModifiers.experienceMultiplier > 1.0 ? '+' : '';
+        const percent = Math.round((environmentModifiers.experienceMultiplier - 1) * 100);
         effectInfo.push(`📈 Kinh nghiệm: ${sign}${percent}%`);
     }
     
-    if (modifiers.coinMultiplier !== 1.0) {
-        const sign = modifiers.coinMultiplier > 1.0 ? '+' : '';
-        const percent = Math.round((modifiers.coinMultiplier - 1) * 100);
+    if (environmentModifiers.coinMultiplier !== 1.0) {
+        const sign = environmentModifiers.coinMultiplier > 1.0 ? '+' : '';
+        const percent = Math.round((environmentModifiers.coinMultiplier - 1) * 100);
         effectInfo.push(`💰 Xu: ${sign}${percent}%`);
     }
     
@@ -112,11 +112,35 @@ async function showCurrentWeather(interaction) {
     }
     
     // Lời khuyên
-    const advice = getWeatherAdvice(weatherInfo.weather, weatherInfo.timeOfDay);
+    const advice = getWeatherAdvice(weather.name, timePeriod.name);
     if (advice) {
         embed.addFields({
             name: '💡 Lời Khuyên',
             value: advice,
+            inline: false
+        });
+    }
+    
+    // Cá đặc biệt có thể xuất hiện
+    const specialFishInfo = [];
+    if (weather.specialFish && weather.specialFish.length > 0) {
+        const weatherFish = weather.specialFish.map(fish => 
+            `${fish.rarity === 'mythical' ? '⭐' : fish.rarity === 'legendary' ? '🐋' : '🐠'} ${fish.name} (${Math.round(fish.chance * 100)}%)`
+        ).join('\n');
+        specialFishInfo.push(`**${weather.emoji} Thời tiết:**\n${weatherFish}`);
+    }
+    
+    if (timePeriod.specialFish && timePeriod.specialFish.length > 0) {
+        const timeFish = timePeriod.specialFish.map(fish => 
+            `${fish.rarity === 'mythical' ? '⭐' : fish.rarity === 'legendary' ? '🐋' : '🐠'} ${fish.name} (${Math.round(fish.chance * 100)}%)`
+        ).join('\n');
+        specialFishInfo.push(`**${timePeriod.emoji} Thời gian:**\n${timeFish}`);
+    }
+    
+    if (specialFishInfo.length > 0) {
+        embed.addFields({
+            name: '🐟 Cá Đặc Biệt Có Thể Xuất Hiện',
+            value: specialFishInfo.join('\n\n'),
             inline: false
         });
     }

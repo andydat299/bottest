@@ -9,7 +9,13 @@ const WEATHER_TYPES = {
     description: 'Trời nắng đẹp, cá hoạt động bình thường',
     fishRateMultiplier: 1.0,
     rareFishBonus: 0,
-    weight: 30
+    experienceMultiplier: 1.0,
+    coinMultiplier: 1.0,
+    weight: 30,
+    specialFish: [
+      { name: 'Cá Vàng Ánh Nắng', rarity: 'rare', price: 200, chance: 0.05 },
+      { name: 'Cá Chép Hoàng Kim', rarity: 'legendary', price: 500, chance: 0.01 }
+    ]
   },
   CLOUDY: {
     name: 'Nhiều mây',
@@ -17,7 +23,12 @@ const WEATHER_TYPES = {
     description: 'Trời nhiều mây, cá dễ câu hơn',
     fishRateMultiplier: 1.1,
     rareFishBonus: 0.05,
-    weight: 25
+    experienceMultiplier: 1.0,
+    coinMultiplier: 1.0,
+    weight: 25,
+    specialFish: [
+      { name: 'Cá Mây Bạc', rarity: 'rare', price: 180, chance: 0.08 }
+    ]
   },
   RAINY: {
     name: 'Mưa',
@@ -25,7 +36,13 @@ const WEATHER_TYPES = {
     description: 'Trời mưa, cá rất hoạt động',
     fishRateMultiplier: 1.3,
     rareFishBonus: 0.1,
-    weight: 20
+    experienceMultiplier: 1.1,
+    coinMultiplier: 1.0,
+    weight: 20,
+    specialFish: [
+      { name: 'Cá Mưa Ngọc Trai', rarity: 'rare', price: 250, chance: 0.12 },
+      { name: 'Cá Sấm Sét', rarity: 'legendary', price: 600, chance: 0.03 }
+    ]
   },
   STORMY: {
     name: 'Bão',
@@ -33,7 +50,13 @@ const WEATHER_TYPES = {
     description: 'Trời bão, khó câu nhưng cá hiếm xuất hiện',
     fishRateMultiplier: 0.7,
     rareFishBonus: 0.2,
-    weight: 8
+    experienceMultiplier: 1.5,
+    coinMultiplier: 1.2,
+    weight: 8,
+    specialFish: [
+      { name: 'Cá Sấm Sét Điện', rarity: 'legendary', price: 800, chance: 0.15 },
+      { name: 'Rồng Bão Tố', rarity: 'mythical', price: 2500, chance: 0.05 }
+    ]
   },
   FOGGY: {
     name: 'Sương mù',
@@ -41,7 +64,13 @@ const WEATHER_TYPES = {
     description: 'Sương mù dày đặc, cá huyền bí xuất hiện',
     fishRateMultiplier: 0.9,
     rareFishBonus: 0.15,
-    weight: 12
+    experienceMultiplier: 1.3,
+    coinMultiplier: 1.1,
+    weight: 12,
+    specialFish: [
+      { name: 'Cá Ma Sương Mù', rarity: 'legendary', price: 700, chance: 0.1 },
+      { name: 'Linh Hồn Sương Trắng', rarity: 'mythical', price: 2000, chance: 0.03 }
+    ]
   },
   WINDY: {
     name: 'Gió mạnh',
@@ -49,7 +78,13 @@ const WEATHER_TYPES = {
     description: 'Gió mạnh, cá nhảy nhiều hơn',
     fishRateMultiplier: 1.2,
     rareFishBonus: 0.08,
-    weight: 15
+    experienceMultiplier: 1.1,
+    coinMultiplier: 1.0,
+    weight: 15,
+    specialFish: [
+      { name: 'Cá Bay Gió Xanh', rarity: 'rare', price: 220, chance: 0.1 },
+      { name: 'Phượng Hoàng Gió', rarity: 'legendary', price: 750, chance: 0.02 }
+    ]
   }
 };
 
@@ -60,7 +95,13 @@ const TIME_PERIODS = {
     hours: [5, 6, 7],
     description: 'Buổi bình minh, cá rất hoạt động',
     fishRateMultiplier: 1.2,
-    rareFishBonus: 0.1
+    rareFishBonus: 0.1,
+    experienceMultiplier: 1.3,
+    coinMultiplier: 1.0,
+    specialFish: [
+      { name: 'Cá Bình Minh Vàng', rarity: 'rare', price: 300, chance: 0.15 },
+      { name: 'Thiên Thần Ánh Sáng', rarity: 'legendary', price: 800, chance: 0.05 }
+    ]
   },
   MORNING: {
     name: 'Buổi sáng',
@@ -68,15 +109,25 @@ const TIME_PERIODS = {
     hours: [8, 9, 10, 11],
     description: 'Buổi sáng, thời gian tốt để câu cá',
     fishRateMultiplier: 1.1,
-    rareFishBonus: 0.05
+    rareFishBonus: 0.05,
+    experienceMultiplier: 1.1,
+    coinMultiplier: 1.0,
+    specialFish: [
+      { name: 'Cá Sáng Trong', rarity: 'rare', price: 180, chance: 0.08 }
+    ]
   },
   NOON: {
     name: 'Buổi trưa',
-    emoji: '🌇',
+    emoji: '☀️',
     hours: [12, 13, 14, 15],
     description: 'Buổi trưa, cá ít hoạt động',
     fishRateMultiplier: 0.8,
-    rareFishBonus: 0
+    rareFishBonus: 0,
+    experienceMultiplier: 0.9,
+    coinMultiplier: 1.0,
+    specialFish: [
+      { name: 'Cá Ngủ Trưa', rarity: 'common', price: 80, chance: 0.1 }
+    ]
   },
   AFTERNOON: {
     name: 'Buổi chiều',
@@ -84,7 +135,12 @@ const TIME_PERIODS = {
     hours: [16, 17, 18],
     description: 'Buổi chiều, cá bắt đầu hoạt động trở lại',
     fishRateMultiplier: 1.0,
-    rareFishBonus: 0.03
+    rareFishBonus: 0.03,
+    experienceMultiplier: 1.0,
+    coinMultiplier: 1.0,
+    specialFish: [
+      { name: 'Cá Chiều Tím', rarity: 'rare', price: 160, chance: 0.06 }
+    ]
   },
   EVENING: {
     name: 'Buổi tối',
@@ -92,7 +148,13 @@ const TIME_PERIODS = {
     hours: [19, 20, 21],
     description: 'Buổi tối, cá đêm xuất hiện',
     fishRateMultiplier: 1.15,
-    rareFishBonus: 0.08
+    rareFishBonus: 0.08,
+    experienceMultiplier: 1.2,
+    coinMultiplier: 1.0,
+    specialFish: [
+      { name: 'Cá Đêm Xanh', rarity: 'rare', price: 240, chance: 0.12 },
+      { name: 'Ma Cà Rồng Biển', rarity: 'legendary', price: 600, chance: 0.03 }
+    ]
   },
   NIGHT: {
     name: 'Đêm khuya',
@@ -100,7 +162,13 @@ const TIME_PERIODS = {
     hours: [22, 23, 0, 1, 2, 3, 4],
     description: 'Đêm khuya, cá đêm hiếm xuất hiện',
     fishRateMultiplier: 0.9,
-    rareFishBonus: 0.15
+    rareFishBonus: 0.15,
+    experienceMultiplier: 1.5,
+    coinMultiplier: 1.2,
+    specialFish: [
+      { name: 'Cá Ma Đêm', rarity: 'legendary', price: 750, chance: 0.08 },
+      { name: 'Quỷ Vương Biển Đêm', rarity: 'mythical', price: 3000, chance: 0.02 }
+    ]
   }
 };
 
@@ -177,22 +245,25 @@ export function getCurrentTimePeriod() {
 /**
  * Tính hệ số ảnh hưởng tổng hợp từ thời tiết và thời gian
  */
-export function getEnvironmentModifiers() {
-  const weather = getCurrentWeather();
-  const timePeriod = getCurrentTimePeriod();
+export function getEnvironmentModifiers(weatherOverride = null, timeOverride = null) {
+  const weather = weatherOverride || getCurrentWeather();
+  const timePeriod = timeOverride || getCurrentTimePeriod();
   
-  // Tổng hợp hệ số
+  // Tổng hợp hệ số (nhân với nhau)
   const fishRateMultiplier = weather.fishRateMultiplier * timePeriod.fishRateMultiplier;
+  const experienceMultiplier = (weather.experienceMultiplier || 1.0) * (timePeriod.experienceMultiplier || 1.0);
+  const coinMultiplier = (weather.coinMultiplier || 1.0) * (timePeriod.coinMultiplier || 1.0);
+  
+  // Tổng hợp bonus cá hiếm (cộng dồn)
   const rareFishBonus = weather.rareFishBonus + timePeriod.rareFishBonus;
   
   return {
     weather,
     timePeriod,
-    modifiers: {
-      fishRateMultiplier: Math.round(fishRateMultiplier * 100) / 100, // Làm tròn 2 chữ số
-      rareFishBonus: Math.round(rareFishBonus * 100) / 100,
-      combinedMultiplier: fishRateMultiplier
-    }
+    fishRateMultiplier: Math.round(fishRateMultiplier * 100) / 100,
+    rareFishBonus: Math.round(rareFishBonus * 100) / 100,
+    experienceMultiplier: Math.round(experienceMultiplier * 100) / 100,
+    coinMultiplier: Math.round(coinMultiplier * 100) / 100
   };
 }
 
@@ -209,10 +280,47 @@ export function applyEnvironmentToMissRate(baseMissRate) {
 }
 
 /**
+ * Lấy cá đặc biệt từ thời tiết và thời gian
+ */
+export function getWeatherSpecialFish() {
+  const { weather, timePeriod } = getEnvironmentModifiers();
+  
+  // Kiểm tra cá đặc biệt từ thời tiết trước
+  if (weather.specialFish && weather.specialFish.length > 0) {
+    for (const fish of weather.specialFish) {
+      if (Math.random() < fish.chance) {
+        return {
+          ...fish,
+          isWeatherFish: true,
+          weatherType: weather.name,
+          weatherEmoji: weather.emoji
+        };
+      }
+    }
+  }
+  
+  // Kiểm tra cá đặc biệt từ thời gian
+  if (timePeriod.specialFish && timePeriod.specialFish.length > 0) {
+    for (const fish of timePeriod.specialFish) {
+      if (Math.random() < fish.chance) {
+        return {
+          ...fish,
+          isTimeFish: true,
+          timeType: timePeriod.name,
+          timeEmoji: timePeriod.emoji
+        };
+      }
+    }
+  }
+  
+  return null;
+}
+
+/**
  * Kiểm tra xem có được bonus cá hiếm không
  */
 export function shouldGetRareFishBonus() {
-  const { modifiers } = getEnvironmentModifiers();
+  const modifiers = getEnvironmentModifiers();
   return Math.random() < modifiers.rareFishBonus;
 }
 
@@ -220,7 +328,8 @@ export function shouldGetRareFishBonus() {
  * Lấy thông tin môi trường để hiển thị
  */
 export function getEnvironmentDisplay() {
-  const { weather, timePeriod, modifiers } = getEnvironmentModifiers();
+  const modifiers = getEnvironmentModifiers();
+  const { weather, timePeriod } = modifiers;
   
   const effectDescription = [];
   
@@ -234,6 +343,14 @@ export function getEnvironmentDisplay() {
     effectDescription.push('✨ Tăng cá hiếm');
   }
   
+  if (modifiers.experienceMultiplier > 1.0) {
+    effectDescription.push('📈 Tăng EXP');
+  }
+  
+  if (modifiers.coinMultiplier > 1.0) {
+    effectDescription.push('💰 Tăng xu');
+  }
+  
   return {
     weather: `${weather.emoji} ${weather.name}`,
     time: `${timePeriod.emoji} ${timePeriod.name}`,
@@ -241,8 +358,10 @@ export function getEnvironmentDisplay() {
     details: {
       weatherDesc: weather.description,
       timeDesc: timePeriod.description,
-      multiplier: `${Math.round(modifiers.fishRateMultiplier * 100)}%`,
-      rareBonus: `+${Math.round(modifiers.rareFishBonus * 100)}%`
+      fishMultiplier: `${Math.round(modifiers.fishRateMultiplier * 100)}%`,
+      rareBonus: `+${Math.round(modifiers.rareFishBonus * 100)}%`,
+      expMultiplier: `${Math.round(modifiers.experienceMultiplier * 100)}%`,
+      coinMultiplier: `${Math.round(modifiers.coinMultiplier * 100)}%`
     }
   };
 }
