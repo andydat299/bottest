@@ -93,14 +93,17 @@ async function showAllLocations(interaction) {
             : '';
         
         const modifierInfo = [];
-        if (location.fishRateModifier !== 1.0) {
-            modifierInfo.push(`🎣 Tỷ lệ câu: x${location.fishRateModifier}`);
+        if (location.modifiers && location.modifiers.fishRateMultiplier !== 1.0) {
+            modifierInfo.push(`🎣 Tỷ lệ câu: ${Math.round(location.modifiers.fishRateMultiplier * 100)}%`);
         }
-        if (location.rareFishBonus > 0) {
-            modifierInfo.push(`✨ Cá hiếm: +${Math.round(location.rareFishBonus * 100)}%`);
+        if (location.modifiers && location.modifiers.rareFishBonus > 0) {
+            modifierInfo.push(`✨ Cá hiếm: +${Math.round(location.modifiers.rareFishBonus * 100)}%`);
         }
-        if (location.experienceBonus > 0) {
-            modifierInfo.push(`📈 EXP: +${Math.round(location.experienceBonus * 100)}%`);
+        if (location.modifiers && location.modifiers.experienceMultiplier !== 1.0) {
+            modifierInfo.push(`📈 Kinh nghiệm: ${Math.round(location.modifiers.experienceMultiplier * 100)}%`);
+        }
+        if (location.modifiers && location.modifiers.missRateModifier && location.modifiers.missRateModifier > 1.0) {
+            modifierInfo.push(`⚠️ Khó câu: +${Math.round((location.modifiers.missRateModifier - 1) * 100)}% tỷ lệ hụt`);
         }
         
         const modifiers = modifierInfo.length > 0 ? `\n${modifierInfo.join(' • ')}` : '';

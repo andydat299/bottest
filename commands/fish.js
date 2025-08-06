@@ -16,7 +16,7 @@ import {
 } from '../utils/durabilityManager.js';
 import { getCurrentWeather, getCurrentTimePeriod, getEnvironmentModifiers, getWeatherSpecialFish } from '../utils/weatherSystem.js';
 import { getEventModifiers, getEventSpecialFish, getEventDisplayInfo } from '../utils/seasonalEvents.js';
-import { getAvailableLocations, canFishAtLocation } from '../utils/fishingLocations.js';
+import { getAvailableLocations, canFishAtLocation, calculateLocationMissRate, getLocationCost } from '../utils/fishingLocations.js';
 
 export default {
   data: new SlashCommandBuilder().setName('fish').setDescription('Câu cá 🎣'),
@@ -214,6 +214,9 @@ export default {
         const efficiency = getDurabilityEfficiency(user.rodDurability, user.rodMaxDurability);
         finalMissRate = finalMissRate * (2 - efficiency); // Độ bền thấp tăng tỷ lệ hụt
         
+        // Áp dụng modifier từ location (địa điểm khó sẽ tăng tỷ lệ hụt)
+        finalMissRate = calculateLocationMissRate(currentLocation, finalMissRate);
+        
         // Áp dụng hệ số từ môi trường và sự kiện (với validation)
         const safeFishRateMultiplier = (environmentModifiers.fishRateMultiplier && !isNaN(environmentModifiers.fishRateMultiplier)) 
           ? environmentModifiers.fishRateMultiplier : 1.0;
@@ -226,7 +229,7 @@ export default {
           finalMissRate = finalMissRate / totalFishRateMultiplier; // Hệ số tốt giảm tỷ lệ hụt
         }
         
-        finalMissRate = Math.min(finalMissRate, 0.8); // Tối đa 80% hụt
+        finalMissRate = Math.min(finalMissRate, 0.85); // Tối đa 85% hụt (tăng từ 80%)
         finalMissRate = Math.max(finalMissRate, 0.02); // Tối thiểu 2%
         
         const missRatePercent = (finalMissRate * 100).toFixed(1);

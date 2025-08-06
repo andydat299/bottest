@@ -13,7 +13,8 @@ export const FISHING_LOCATIONS = {
     modifiers: {
       fishRateMultiplier: 1.0,
       rareFishBonus: 0,
-      experienceMultiplier: 1.0
+      experienceMultiplier: 1.0,
+      missRateModifier: 1.0 // Tỷ lệ hụt bình thường
     },
     availableFish: ['common', 'rare'],
     specialFish: [
@@ -32,7 +33,8 @@ export const FISHING_LOCATIONS = {
     modifiers: {
       fishRateMultiplier: 1.1,
       rareFishBonus: 0.05,
-      experienceMultiplier: 1.1
+      experienceMultiplier: 1.1,
+      missRateModifier: 1.1 // Hụt nhiều hơn 10%
     },
     availableFish: ['common', 'rare', 'legendary'],
     specialFish: [
@@ -51,7 +53,8 @@ export const FISHING_LOCATIONS = {
     modifiers: {
       fishRateMultiplier: 0.9,
       rareFishBonus: 0.15,
-      experienceMultiplier: 1.3
+      experienceMultiplier: 1.3,
+      missRateModifier: 1.3 // Hụt nhiều hơn 30%
     },
     availableFish: ['common', 'rare', 'legendary', 'mythical'],
     specialFish: [
@@ -70,7 +73,8 @@ export const FISHING_LOCATIONS = {
     modifiers: {
       fishRateMultiplier: 0.7,
       rareFishBonus: 0.25,
-      experienceMultiplier: 1.5
+      experienceMultiplier: 1.5,
+      missRateModifier: 1.5 // Hụt nhiều hơn 50%
     },
     availableFish: ['rare', 'legendary', 'mythical'],
     specialFish: [
@@ -89,7 +93,8 @@ export const FISHING_LOCATIONS = {
     modifiers: {
       fishRateMultiplier: 0.8,
       rareFishBonus: 0.2,
-      experienceMultiplier: 1.4
+      experienceMultiplier: 1.4,
+      missRateModifier: 1.4 // Hụt nhiều hơn 40%
     },
     availableFish: ['rare', 'legendary', 'mythical'],
     specialFish: [
@@ -108,7 +113,8 @@ export const FISHING_LOCATIONS = {
     modifiers: {
       fishRateMultiplier: 0.6,
       rareFishBonus: 0.3,
-      experienceMultiplier: 2.0
+      experienceMultiplier: 2.0,
+      missRateModifier: 1.6 // Hụt nhiều hơn 60%
     },
     availableFish: ['legendary', 'mythical'],
     specialFish: [
@@ -127,7 +133,8 @@ export const FISHING_LOCATIONS = {
     modifiers: {
       fishRateMultiplier: 0.5,
       rareFishBonus: 0.4,
-      experienceMultiplier: 3.0
+      experienceMultiplier: 3.0,
+      missRateModifier: 2.0 // Hụt nhiều hơn 100% (cực khó)
     },
     availableFish: ['mythical'],
     specialFish: [
@@ -212,14 +219,36 @@ export function canFishAtLocation(locationId, userLevel, userBalance) {
 export function applyLocationModifiers(locationId, baseFishRate, baseRareRate) {
   const location = FISHING_LOCATIONS[locationId] || FISHING_LOCATIONS.LAKE;
   
-  const modifiedFishRate = baseFishRate * location.modifiers.fishRateMultiplier;
-  const modifiedRareRate = baseRareRate + location.modifiers.rareFishBonus;
+  const modifiedFishRate = baseFishRate * (location.modifiers.fishRateMultiplier || 1.0);
+  const modifiedRareRate = baseRareRate + (location.modifiers.rareFishBonus || 0);
   
   return {
-    fishRate: Math.min(0.95, Math.max(0.05, modifiedFishRate)),
-    rareRate: Math.min(0.5, Math.max(0, modifiedRareRate)),
-    experienceMultiplier: location.modifiers.experienceMultiplier
+    fishRate: Math.min(modifiedFishRate, 1.0),
+    rareRate: Math.min(modifiedRareRate, 0.8)
   };
+}
+
+/**
+ * Tính toán tỷ lệ hụt cá với modifier từ location
+ */
+export function calculateLocationMissRate(locationId, baseMissRate) {
+  // Tìm location bằng id
+  const location = Object.values(FISHING_LOCATIONS).find(loc => loc.id === locationId) || FISHING_LOCATIONS.LAKE;
+  const missRateModifier = location.modifiers.missRateModifier || 1.0;
+  
+  // Áp dụng modifier của location
+  const modifiedMissRate = baseMissRate * missRateModifier;
+  
+  // Giới hạn tỷ lệ hụt từ 2% đến 85%
+  return Math.min(Math.max(modifiedMissRate, 0.02), 0.85);
+}
+
+/**
+ * Lấy thông tin chi phí của location
+ */
+export function getLocationCost(locationId) {
+  const location = FISHING_LOCATIONS[locationId] || FISHING_LOCATIONS.LAKE;
+  return location.cost || 0;
 }
 
 /**
