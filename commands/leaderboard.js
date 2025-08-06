@@ -2,7 +2,7 @@ import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
 import { User } from '../schemas/userSchema.js';
 import { isAdmin, createNoPermissionEmbed, createErrorEmbed } from '../utils/adminUtils.js';
 
-export const data = new SlashCommandBuilder()
+const data = new SlashCommandBuilder()
   .setName('leaderboard')
   .setDescription('[ADMIN] Xem bảng xếp hạng người dùng')
   .addStringOption(option =>
@@ -22,7 +22,7 @@ export const data = new SlashCommandBuilder()
       .setMinValue(1)
       .setMaxValue(20));
 
-export async function execute(interaction) {
+async function execute(interaction) {
   // Kiểm tra quyền admin
   if (!isAdmin(interaction.user.id)) {
     return interaction.reply({ 
@@ -149,3 +149,5 @@ export async function execute(interaction) {
     await interaction.reply({ embeds: [embed], ephemeral: true });
   }
 }
+
+export default { data, execute };

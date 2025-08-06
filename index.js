@@ -38,9 +38,19 @@ console.log(`Found ${commandFiles.length} command files:`, commandFiles);
 
 for (const file of commandFiles) {
   console.log(`Loading command: ${file}`);
-  const command = (await import(`./commands/${file}`)).default;
-  client.commands.set(command.data.name, command);
-  console.log(`✅ Loaded: ${command.data.name}`);
+  try {
+    const commandModule = await import(`./commands/${file}`);
+    const command = commandModule.default || commandModule;
+    
+    if (command && command.data && command.data.name) {
+      client.commands.set(command.data.name, command);
+      console.log(`✅ Loaded: ${command.data.name}`);
+    } else {
+      console.log(`❌ Failed to load ${file}: missing data or data.name`);
+    }
+  } catch (error) {
+    console.log(`❌ Error loading ${file}:`, error.message);
+  }
 }
 
 console.log('📂 Loading events...');

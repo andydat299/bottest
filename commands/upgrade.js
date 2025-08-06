@@ -1,6 +1,7 @@
 import { SlashCommandBuilder } from 'discord.js';
 import { User } from '../schemas/userSchema.js';
 import { updateQuestProgress } from '../utils/questManager.js';
+import { getMaxDurability } from '../utils/durabilityManager.js';
 
 export default {
   data: new SlashCommandBuilder()
@@ -46,6 +47,12 @@ export default {
 
     user.balance -= upgradeCost;
     user.rodLevel = currentLevel + 1;
+    
+    // Cập nhật độ bền cho cần mới
+    const newMaxDurability = getMaxDurability(user.rodLevel);
+    user.rodMaxDurability = newMaxDurability;
+    user.rodDurability = newMaxDurability; // Cần mới = 100% độ bền
+    
     await user.save();
 
     // Cập nhật quest upgrade
@@ -58,7 +65,7 @@ export default {
       : '\n🏆 **Bạn đã đạt level tối đa!**';
 
     await interaction.reply({
-      content: `🎣 Đã nâng cấp cần câu lên **cấp ${user.rodLevel}**!\n💰 Còn lại: **${user.balance.toLocaleString()} xu**\n🐟 Cơ hội câu được cá hiếm đã tăng!${nextUpgradeInfo}`
+      content: `🎣 Đã nâng cấp cần câu lên **cấp ${user.rodLevel}**!\n💰 Còn lại: **${user.balance.toLocaleString()} xu**\n� **Độ bền mới:** ${user.rodDurability}/${user.rodMaxDurability} (100%)\n�🐟 Cơ hội câu được cá hiếm đã tăng!${nextUpgradeInfo}`
     });
   }
 };

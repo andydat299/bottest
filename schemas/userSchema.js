@@ -3,6 +3,8 @@ import mongoose from 'mongoose';
 const userSchema = new mongoose.Schema({
   discordId: { type: String, required: true, unique: true },
   rodLevel: { type: Number, default: 1 },
+  rodDurability: { type: Number, default: 100 }, // Độ bền cần câu (0-100)
+  rodMaxDurability: { type: Number, default: 100 }, // Độ bền tối đa
   fish: { type: Map, of: Number, default: {} },
   balance: { type: Number, default: 0 },
   totalSold: { type: Number, default: 0 },

@@ -1,11 +1,11 @@
 import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
 import { isAdmin, createNoPermissionEmbed } from '../utils/adminUtils.js';
 
-export const data = new SlashCommandBuilder()
+const data = new SlashCommandBuilder()
   .setName('adminhelp')
   .setDescription('[ADMIN] Hiển thị danh sách lệnh admin');
 
-export async function execute(interaction) {
+async function execute(interaction) {
   // Kiểm tra quyền admin
   if (!isAdmin(interaction.user.id)) {
     return interaction.reply({ 
@@ -55,3 +55,5 @@ export async function execute(interaction) {
 
   await interaction.reply({ embeds: [embed], ephemeral: true });
 }
+
+export default { data, execute };

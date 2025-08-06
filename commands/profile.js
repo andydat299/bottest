@@ -1,5 +1,10 @@
 import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
 import { User } from '../schemas/userSchema.js';
+import { 
+  getMaxDurability, 
+  getDurabilityEmoji, 
+  getDurabilityStatus 
+} from '../utils/durabilityManager.js';
 
 export default {
   data: new SlashCommandBuilder().setName('profile').setDescription('Xem thông tin người chơi'),
@@ -7,6 +12,14 @@ export default {
 
   async execute(interaction) {
     const user = await User.findOne({ discordId: interaction.user.id }) || await User.create({ discordId: interaction.user.id });
+
+    // Đảm bảo durability tồn tại
+    const maxDurability = getMaxDurability(user.rodLevel || 1);
+    if (user.rodDurability === undefined || user.rodMaxDurability === undefined) {
+      user.rodDurability = maxDurability;
+      user.rodMaxDurability = maxDurability;
+      await user.save();
+    }
 
     // Tính toán thống kê
     const totalAttempts = user.fishingStats?.totalFishingAttempts || 0;
@@ -35,10 +48,20 @@ export default {
     const rodEmojis = ['🎣', '🎯', '⭐', '💎', '👑'];
     const rodEmoji = rodEmojis[Math.min(user.rodLevel - 1, rodEmojis.length - 1)] || '🎣';
     
+    // Thông tin độ bền
+    const durabilityEmoji = getDurabilityEmoji(user.rodDurability, user.rodMaxDurability);
+    const durabilityPercent = Math.round((user.rodDurability / user.rodMaxDurability) * 100);
+    const durabilityStatus = getDurabilityStatus(user.rodDurability, user.rodMaxDurability);
+    
     embed.addFields(
       {
-        name: `${rodEmoji} Thông tin câu cá`,
-        value: `• **Cần câu:** Cấp ${user.rodLevel}\n• **Tổng lần câu:** ${totalAttempts.toLocaleString()}\n• **Câu thành công:** ${successfulCatches.toLocaleString()}\n• **Câu hụt:** ${missedCatches.toLocaleString()}\n• **Tỷ lệ thành công:** ${successRate}%`,
+        name: `${rodEmoji} Thông tin cần câu`,
+        value: `• **Cấp cần:** ${user.rodLevel}\n• **Độ bền:** ${durabilityEmoji} ${user.rodDurability}/${user.rodMaxDurability} (${durabilityPercent}%)\n• **Trạng thái:** ${durabilityStatus}`,
+        inline: true
+      },
+      {
+        name: '📊 Thống kê câu cá',
+        value: `• **Tổng lần câu:** ${totalAttempts.toLocaleString()}\n• **Câu thành công:** ${successfulCatches.toLocaleString()}\n• **Câu hụt:** ${missedCatches.toLocaleString()}\n• **Tỷ lệ thành công:** ${successRate}%`,
         inline: true
       },
       {

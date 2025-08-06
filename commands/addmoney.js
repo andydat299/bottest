@@ -2,7 +2,7 @@ import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
 import { User } from '../schemas/userSchema.js';
 import { isAdmin, createNoPermissionEmbed, createSuccessEmbed, createErrorEmbed } from '../utils/adminUtils.js';
 
-export const data = new SlashCommandBuilder()
+const data = new SlashCommandBuilder()
   .setName('addmoney')
   .setDescription('[ADMIN] Thêm tiền cho người dùng')
   .addUserOption(option =>
@@ -15,7 +15,7 @@ export const data = new SlashCommandBuilder()
       .setRequired(true)
       .setMinValue(1));
 
-export async function execute(interaction) {
+async function execute(interaction) {
   // Kiểm tra quyền admin
   if (!isAdmin(interaction.user.id)) {
     return interaction.reply({ 
@@ -63,3 +63,5 @@ export async function execute(interaction) {
     await interaction.reply({ embeds: [embed], ephemeral: true });
   }
 }
+
+export default { data, execute };

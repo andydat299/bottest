@@ -5,6 +5,14 @@ import { GlobalStats } from '../schemas/globalStatsSchema.js';
 import { selectRandomFish } from '../utils/fishingLogic.js';
 import { checkFishingCooldown, setFishingCooldown, clearFishingCooldown, formatCooldownTime } from '../utils/cooldownManager.js';
 import { updateQuestProgress } from '../utils/questManager.js';
+import { 
+  getMaxDurability, 
+  calculateDurabilityLoss, 
+  isRodBroken, 
+  getDurabilityEfficiency,
+  getDurabilityEmoji,
+  getDurabilityStatus 
+} from '../utils/durabilityManager.js';
 
 export default {
   data: new SlashCommandBuilder().setName('fish').setDescription('Câu cá 🎣'),
@@ -44,6 +52,23 @@ export default {
       await user.save();
     }
 
+    // Đảm bảo durability tồn tại và cập nhật theo rod level
+    const maxDurability = getMaxDurability(user.rodLevel || 1);
+    if (user.rodDurability === undefined || user.rodMaxDurability === undefined) {
+      user.rodDurability = maxDurability;
+      user.rodMaxDurability = maxDurability;
+      await user.save();
+    }
+
+    // Kiểm tra nếu cần câu bị hỏng
+    if (isRodBroken(user.rodDurability)) {
+      clearFishingCooldown(discordId);
+      return interaction.reply({
+        content: `💥 **Cần câu đã hỏng!**\n\n🔧 Bạn cần sửa chữa cần câu trước khi có thể câu cá.\n💰 Sử dụng lệnh \`/repair\` để sửa chữa.\n\n⚠️ *Không thể câu cá với cần bị hỏng!*`,
+        ephemeral: true
+      });
+    }
+
     // Kiểm tra phí câu cá (sau 5 lần đầu miễn phí)
     const FISHING_FEE = 10;
     const FREE_ATTEMPTS = 5;
@@ -69,9 +94,14 @@ export default {
     setFishingCooldown(discordId, 20); // 20 giây cooldown
 
     const feeInfo = totalAttempts >= FREE_ATTEMPTS ? `💰 Phí: ${FISHING_FEE} xu` : `🆓 Miễn phí (${FREE_ATTEMPTS - totalAttempts} lần còn lại)`;
+    
+    // Hiển thị thông tin độ bền
+    const durabilityEmoji = getDurabilityEmoji(user.rodDurability, user.rodMaxDurability);
+    const durabilityPercent = Math.round((user.rodDurability / user.rodMaxDurability) * 100);
+    const durabilityInfo = `${durabilityEmoji} Độ bền: ${user.rodDurability}/${user.rodMaxDurability} (${durabilityPercent}%)`;
 
     const msg = await interaction.reply({
-      content: `🎣 Nhấn **${clicksNeeded} lần** để câu cá!\n${feeInfo}\n⏰ *Cooldown: 20 giây*`,
+      content: `🎣 Nhấn **${clicksNeeded} lần** để câu cá!\n${feeInfo}\n${durabilityInfo}\n⏰ *Cooldown: 20 giây*`,
       components: [getFishButtons()],
       fetchReply: true
     });
@@ -118,10 +148,20 @@ export default {
         const baseMissRate = 0.20; // 20% cơ bản
         const rodLevel = user.rodLevel || 1;
         const missRateReduction = (rodLevel - 1) * 0.02; // Giảm 2% mỗi level
-        const finalMissRate = Math.max(baseMissRate - missRateReduction, 0.05); // Tối thiểu 5%
+        let finalMissRate = Math.max(baseMissRate - missRateReduction, 0.05); // Tối thiểu 5%
+        
+        // Áp dụng hệ số hiệu suất từ độ bền
+        const efficiency = getDurabilityEfficiency(user.rodDurability, user.rodMaxDurability);
+        finalMissRate = finalMissRate * (2 - efficiency); // Độ bền thấp tăng tỷ lệ hụt
+        finalMissRate = Math.min(finalMissRate, 0.8); // Tối đa 80% hụt
+        
         const missRatePercent = (finalMissRate * 100).toFixed(1);
         
         const isMiss = Math.random() < finalMissRate;
+        
+        // Tính độ hao mòn cần câu
+        const durabilityLoss = calculateDurabilityLoss(rodLevel, isMiss);
+        user.rodDurability = Math.max(0, user.rodDurability - durabilityLoss);
         
         if (isMiss) {
           // Câu hụt
@@ -142,8 +182,12 @@ export default {
           
           const randomMessage = missMessages[Math.floor(Math.random() * missMessages.length)];
           
+          // Thông báo về độ bền
+          const durabilityWarning = user.rodDurability <= 20 ? '\n⚠️ **Cảnh báo:** Cần câu sắp hỏng!' : '';
+          const brokenWarning = user.rodDurability <= 0 ? '\n💥 **Cần câu đã hỏng!** Sử dụng `/repair` để sửa chữa.' : '';
+          
           await interaction.editReply({
-            content: `${randomMessage}\n\n📊 Tỷ lệ câu hụt: **${missRatePercent}%** (giảm theo rod level)\n💡 Nâng cấp cần câu để giảm tỷ lệ câu hụt!`,
+            content: `${randomMessage}\n\n📊 Tỷ lệ câu hụt: **${missRatePercent}%**\n🔧 Độ bền giảm: **${durabilityLoss}**\n💡 Nâng cấp cần câu để giảm tỷ lệ câu hụt!${durabilityWarning}${brokenWarning}`,
             components: []
           });
           return;
@@ -203,6 +247,12 @@ export default {
         } else if (fish.rarity === 'rare') {
           message += '\n💎 Cá hiếm đấy!';
         }
+
+        // Thông báo về độ bền
+        const durabilityWarning = user.rodDurability <= 20 ? '\n⚠️ **Cảnh báo:** Cần câu sắp hỏng!' : '';
+        const brokenWarning = user.rodDurability <= 0 ? '\n💥 **Cần câu đã hỏng!** Sử dụng `/repair` để sửa chữa.' : '';
+        
+        message += `\n🔧 Độ bền giảm: **${durabilityLoss}**${durabilityWarning}${brokenWarning}`;
 
         await interaction.editReply({ content: message, components: [] });
         

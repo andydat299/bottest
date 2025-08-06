@@ -24,12 +24,12 @@ export default {
         },
         {
           name: '⚙️ Lệnh hệ thống',
-          value: '• `/upgrade` hoặc `f!upgrade` - Nâng cấp cần câu\n• `/upgrades` - Xem bảng giá nâng cấp\n• `/reset` - Reset toàn bộ dữ liệu\n• `/help` hoặc `f!help` - Xem hướng dẫn này',
+          value: '• `/upgrade` hoặc `f!upgrade` - Nâng cấp cần câu\n• `/upgrades` - Xem bảng giá nâng cấp\n• `/repair` - Sửa chữa cần câu\n• `/reset` - Reset toàn bộ dữ liệu\n• `/help` hoặc `f!help` - Xem hướng dẫn này',
           inline: false
         },
         {
           name: '💡 Mẹo chơi',
-          value: '1. **5 lần đầu câu cá MIỄN PHÍ!** 🆓\n2. Sau đó mỗi lần câu tốn **10 xu**\n3. Có tỷ lệ câu hụt (~20%, giảm theo rod level)\n4. Bán cá để có xu mua nâng cấp\n5. Nâng cấp cần câu để giảm tỷ lệ câu hụt\n6. **Cooldown 1 phút** giữa các lần câu cá\n7. Hoàn thành quest hàng ngày để có thêm xu!',
+          value: '1. **5 lần đầu câu cá MIỄN PHÍ!** 🆓\n2. Sau đó mỗi lần câu tốn **10 xu**\n3. Có tỷ lệ câu hụt (~20%, giảm theo rod level)\n4. **Cần câu có độ bền, sẽ hư hỏng theo thời gian**\n5. Nâng cấp cần câu để giảm tỷ lệ câu hụt\n6. Sử dụng `/repair` để sửa chữa cần câu\n7. **Cooldown 20 giây** giữa các lần câu cá\n8. Hoàn thành quest hàng ngày để có thêm xu!',
           inline: false
         }
       )
