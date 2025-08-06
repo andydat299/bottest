@@ -5,3 +5,4 @@ export const config = {
   guildId: process.env.GUILD_ID,
   prefix: 'f!'
 };
+// Đạt Trần
