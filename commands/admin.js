@@ -1,20 +1,20 @@
-const { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } = require('discord.js');
-const { 
+import { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } from 'discord.js';
+import { 
   enableWeatherSystem, 
   disableWeatherSystem, 
   enableTimeSystem, 
   disableTimeSystem, 
   getSystemStatus,
   forceUpdateWeather 
-} = require('../utils/weatherSystem.js');
-const { 
+} from '../utils/weatherSystem.js';
+import { 
   enableEventSystem, 
   disableEventSystem, 
   getEventSystemStatus,
   activateSpecialEvent 
-} = require('../utils/seasonalEvents.js');
+} from '../utils/seasonalEvents.js';
 
-module.exports = {
+export default {
   data: new SlashCommandBuilder()
     .setName('admin')
     .setDescription('Quản lý hệ thống bot (chỉ admin)')
