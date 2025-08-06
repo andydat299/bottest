@@ -17,6 +17,8 @@ import {
 import { getCurrentWeather, getCurrentTimePeriod, getEnvironmentModifiers, getWeatherSpecialFish } from '../utils/weatherSystem.js';
 import { getEventModifiers, getEventSpecialFish, getEventDisplayInfo } from '../utils/seasonalEvents.js';
 import { getAvailableLocations, canFishAtLocation, calculateLocationMissRate, getLocationCost } from '../utils/fishingLocations.js';
+import { calculateFishingPenalty, applyFishingPenalty } from '../utils/fishingPenalty.js';
+import { isCommandDisabled } from '../utils/commandControl.js';
 
 export default {
   data: new SlashCommandBuilder().setName('fish').setDescription('Câu cá 🎣'),
@@ -244,6 +246,15 @@ export default {
           // Câu hụt
           console.log(`❌ ${interaction.user.username} câu hụt (${missRatePercent}%)`);
           user.fishingStats.missedCatches = (user.fishingStats.missedCatches || 0) + 1;
+          
+          // Tính và áp dụng penalty (rớt xu)
+          const penalty = calculateFishingPenalty(user, currentLocation, rodLevel);
+          let penaltyInfo = null;
+          
+          if (penalty > 0) {
+            penaltyInfo = await applyFishingPenalty(user, penalty, currentLocation);
+          }
+          
           await user.save();
           
           // Log câu hụt
@@ -262,6 +273,23 @@ export default {
           
           const randomMessage = missMessages[Math.floor(Math.random() * missMessages.length)];
           
+          // Tạo thông báo penalty
+          let penaltyMessage = '';
+          if (penaltyInfo) {
+            if (penaltyInfo.isAtLimit) {
+              penaltyMessage = `\n🛡️ **Không rớt xu** (Đã đạt giới hạn 5,000 xu/ngày)`;
+            } else {
+              penaltyMessage = `\n💸 **Rớt ${penaltyInfo.penalty} xu** (${penaltyInfo.reason})`;
+              penaltyMessage += `\n💰 Balance: ${penaltyInfo.newBalance.toLocaleString()} xu`;
+              
+              if (penaltyInfo.isNearLimit) {
+                penaltyMessage += `\n⚠️ **Gần giới hạn:** ${penaltyInfo.todayLost.toLocaleString()}/5,000 xu hôm nay`;
+              } else {
+                penaltyMessage += `\n📊 Hôm nay đã mất: ${penaltyInfo.todayLost.toLocaleString()}/5,000 xu`;
+              }
+            }
+          }
+          
           // Thông báo về độ bền
           const durabilityWarning = user.rodDurability <= 20 ? '\n⚠️ **Cảnh báo:** Cần câu sắp hỏng!' : '';
           const brokenWarning = user.rodDurability <= 0 ? '\n💥 **Cần câu đã hỏng!** Sử dụng `/repair` để sửa chữa.' : '';
@@ -272,7 +300,7 @@ export default {
           }
           
           await interaction.editReply({
-            content: `${randomMessage}\n\n📊 Tỷ lệ câu hụt: **${missRatePercent}%**\n🔧 Độ bền giảm: **${durabilityLoss}**\n${environmentEffects.join('\n')}\n💡 Nâng cấp cần câu để giảm tỷ lệ câu hụt!${durabilityWarning}${brokenWarning}`,
+            content: `${randomMessage}${penaltyMessage}\n\n📊 Tỷ lệ câu hụt: **${missRatePercent}%**\n🔧 Độ bền giảm: **${durabilityLoss}**\n${environmentEffects.join('\n')}\n💡 Nâng cấp cần câu để giảm tỷ lệ câu hụt!${durabilityWarning}${brokenWarning}`,
             components: []
           });
           return;

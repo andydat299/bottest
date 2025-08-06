@@ -13,8 +13,18 @@ const userSchema = new mongoose.Schema({
   fishingStats: {
     totalFishingAttempts: { type: Number, default: 0 }, // Tổng lần câu
     successfulCatches: { type: Number, default: 0 },    // Lần câu thành công
-    missedCatches: { type: Number, default: 0 }         // Lần câu hụt
+    missedCatches: { type: Number, default: 0 },        // Lần câu hụt
+    totalMoneyLostToMisses: { type: Number, default: 0 }, // Tổng xu mất do hụt
+    biggestSingleLoss: { type: Number, default: 0 }     // Mất nhiều nhất 1 lần
   },
+  dailyLossStats: { 
+    type: Map, 
+    of: {
+      totalLost: { type: Number, default: 0 },
+      lossCount: { type: Number, default: 0 }
+    }, 
+    default: {} 
+  }, // Format: 'YYYY-MM-DD' -> { totalLost, lossCount }
   chatStats: {
     totalMessages: { type: Number, default: 0 },
     dailyMessages: { type: Map, of: Number, default: {} }, // Format: 'YYYY-MM-DD' -> count

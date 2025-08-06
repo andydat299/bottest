@@ -20,6 +20,13 @@ import {
   getControllableCommands,
   resetAllCommands
 } from '../utils/commandControl.js';
+import {
+  enablePenaltySystem,
+  disablePenaltySystem,
+  setDailyLossLimit,
+  setPenaltyMultiplier,
+  getPenaltySystemStatus
+} from '../utils/fishingPenalty.js';
 
 export default {
   data: new SlashCommandBuilder()
@@ -139,6 +146,44 @@ export default {
             .setDescription('Bật lại tất cả lệnh')
         )
     )
+    .addSubcommandGroup(group =>
+      group.setName('fishing')
+        .setDescription('Quản lý hệ thống phạt xu khi hụt cá')
+        .addSubcommand(subcommand =>
+          subcommand.setName('penalty-enable')
+            .setDescription('Bật hệ thống phạt xu khi hụt cá')
+        )
+        .addSubcommand(subcommand =>
+          subcommand.setName('penalty-disable')
+            .setDescription('Tắt hệ thống phạt xu khi hụt cá')
+        )
+        .addSubcommand(subcommand =>
+          subcommand.setName('set-limit')
+            .setDescription('Đặt giới hạn xu mất tối đa/ngày')
+            .addIntegerOption(option =>
+              option.setName('limit')
+                .setDescription('Giới hạn xu (100-50000)')
+                .setRequired(true)
+                .setMinValue(100)
+                .setMaxValue(50000)
+            )
+        )
+        .addSubcommand(subcommand =>
+          subcommand.setName('set-multiplier')
+            .setDescription('Đặt hệ số phạt xu')
+            .addNumberOption(option =>
+              option.setName('multiplier')
+                .setDescription('Hệ số phạt (0.1-5.0)')
+                .setRequired(true)
+                .setMinValue(0.1)
+                .setMaxValue(5.0)
+            )
+        )
+        .addSubcommand(subcommand =>
+          subcommand.setName('status')
+            .setDescription('Xem trạng thái hệ thống phạt xu')
+        )
+    )
     .addSubcommand(subcommand =>
       subcommand.setName('status')
         .setDescription('Xem trạng thái tổng quan tất cả hệ thống')
@@ -163,6 +208,78 @@ export default {
         await handleEventCommands(interaction, subcommand);
       } else if (group === 'command') {
         await handleCommandControls(interaction, subcommand);
+      } else if (group === 'fishing') {
+        if (subcommand === 'penalty-enable') {
+          const enabled = enableFishingPenalty();
+          if (enabled) {
+            const statusEmbed = new EmbedBuilder()
+              .setTitle('🟢 Hệ Thống Phạt Xu Đã Bật')
+              .setDescription('Player sẽ bị phạt xu khi câu cá hụt.')
+              .setColor('#00ff00')
+              .setTimestamp();
+            
+            await interaction.reply({ embeds: [statusEmbed] });
+          } else {
+            await interaction.reply('Hệ thống phạt xu đã được bật từ trước.');
+          }
+        } else if (subcommand === 'penalty-disable') {
+          const disabled = disableFishingPenalty();
+          if (disabled) {
+            const statusEmbed = new EmbedBuilder()
+              .setTitle('🔴 Hệ Thống Phạt Xu Đã Tắt')
+              .setDescription('Player sẽ không bị phạt xu khi câu cá hụt.')
+              .setColor('#ff0000')
+              .setTimestamp();
+            
+            await interaction.reply({ embeds: [statusEmbed] });
+          } else {
+            await interaction.reply('Hệ thống phạt xu đã được tắt từ trước.');
+          }
+        } else if (subcommand === 'set-limit') {
+          const limit = interaction.options.getInteger('limit');
+          const set = setDailyLossLimit(limit);
+          if (set) {
+            const statusEmbed = new EmbedBuilder()
+              .setTitle('💰 Đã Cập Nhật Giới Hạn Phạt Xu')
+              .setDescription(`Giới hạn mới: **${limit.toLocaleString()} xu/ngày**`)
+              .setColor('#00ff00')
+              .setTimestamp();
+            
+            await interaction.reply({ embeds: [statusEmbed] });
+          } else {
+            await interaction.reply('Không thể cập nhật giới hạn phạt xu.');
+          }
+        } else if (subcommand === 'set-multiplier') {
+          const multiplier = interaction.options.getNumber('multiplier');
+          const set = setPenaltyMultiplier(multiplier);
+          if (set) {
+            const statusEmbed = new EmbedBuilder()
+              .setTitle('🔧 Đã Cập Nhật Hệ Số Phạt')
+              .setDescription(`Hệ số mới: **x${multiplier}**`)
+              .setColor('#00ff00')
+              .setTimestamp();
+            
+            await interaction.reply({ embeds: [statusEmbed] });
+          } else {
+            await interaction.reply('Không thể cập nhật hệ số phạt xu.');
+          }
+        } else if (subcommand === 'status') {
+          const status = getFishingPenaltyStatus();
+          const statusEmbed = new EmbedBuilder()
+            .setTitle('📊 Trạng Thái Hệ Thống Phạt Xu')
+            .addFields(
+              { name: '⚡ Trạng thái', value: status.enabled ? '🟢 Bật' : '🔴 Tắt', inline: true },
+              { name: '💰 Giới hạn/ngày', value: `${status.dailyLimit.toLocaleString()} xu`, inline: true },
+              { name: '🔧 Hệ số phạt', value: `x${status.multiplier}`, inline: true },
+              { name: '📈 Phạt cơ bản', value: '8-50 xu/lần hụt', inline: true },
+              { name: '🌍 Bonus địa điểm', value: '0-22 xu thêm', inline: true },
+              { name: '🎣 Bonus cần câu', value: '0-10 xu thêm', inline: true }
+            )
+            .setColor(status.enabled ? '#00ff00' : '#ff0000')
+            .setTimestamp();
+          
+          await interaction.reply({ embeds: [statusEmbed] });
+        }
       } else if (subcommand === 'status') {
         await handleOverallStatus(interaction);
       }
