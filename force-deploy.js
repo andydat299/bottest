@@ -32,7 +32,8 @@ console.log(`\n📤 Deploying ${commands.length} commands...`);
 const rest = new REST({ version: '10' }).setToken(config.token);
 
 try {
-  // Deploy to guild first (instant)
+  // Chỉ deploy một loại để tránh duplicate
+  // Ưu tiên guild commands nếu có guild ID (instant), nếu không thì dùng global
   if (config.guildId) {
     console.log('🏃‍♂️ Deploying to guild (instant)...');
     await rest.put(
@@ -40,19 +41,18 @@ try {
       { body: commands },
     );
     console.log(`✅ Successfully deployed ${commands.length} commands to guild ${config.guildId}`);
+    console.log('💡 Guild commands are available immediately');
+  } else {
+    console.log('🌍 Deploying globally (takes time)...');
+    await rest.put(
+      Routes.applicationCommands(config.clientId),
+      { body: commands },
+    );
+    console.log(`✅ Successfully deployed ${commands.length} global commands`);
+    console.log('⏰ Global commands may take up to 1 hour to appear');
   }
   
-  // Deploy globally (takes time)
-  console.log('🌍 Deploying globally...');
-  await rest.put(
-    Routes.applicationCommands(config.clientId),
-    { body: commands },
-  );
-  console.log(`✅ Successfully deployed ${commands.length} global commands`);
-  
-  console.log('\n🎉 All commands deployed successfully!');
-  console.log('💡 Guild commands are available immediately');
-  console.log('⏰ Global commands may take up to 1 hour to appear');
+  console.log('\n🎉 Commands deployed successfully!');
   
 } catch (error) {
   console.error('❌ Deploy failed:', error);

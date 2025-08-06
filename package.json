@@ -7,6 +7,7 @@
     "start": "node index.js",
     "deploy": "node deploy-commands.js",
     "force-deploy": "node force-deploy.js",
+    "cleanup": "node railway-cleanup.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
