@@ -2,7 +2,7 @@ import { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, But
 import { User } from '../schemas/userSchema.js';
 import { isAdmin, createNoPermissionEmbed, createSuccessEmbed, createErrorEmbed } from '../utils/adminUtils.js';
 
-export const data = new SlashCommandBuilder()
+const data = new SlashCommandBuilder()
   .setName('resetuser')
   .setDescription('[ADMIN] Reset dữ liệu của người dùng')
   .addUserOption(option =>
@@ -20,7 +20,7 @@ export const data = new SlashCommandBuilder()
         { name: 'Chỉ thống kê', value: 'stats' }
       ));
 
-export async function execute(interaction) {
+async function execute(interaction) {
   // Kiểm tra quyền admin
   if (!isAdmin(interaction.user.id)) {
     return interaction.reply({ 
@@ -98,7 +98,7 @@ export async function execute(interaction) {
 }
 
 // Xử lý button interaction cho reset user
-export async function handleResetButton(interaction) {
+async function handleResetButton(interaction) {
   const [action, confirm, userId, resetType] = interaction.customId.split('_');
   
   if (action !== 'reset') return false;
@@ -198,3 +198,6 @@ export async function handleResetButton(interaction) {
   
   return true;
 }
+
+export default { data, execute };
+export { handleResetButton };
