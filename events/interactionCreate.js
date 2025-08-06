@@ -1,5 +1,6 @@
 import { claimQuestReward } from '../utils/questManager.js';
 import { User } from '../schemas/userSchema.js';
+import { handleResetButton } from '../commands/resetuser.js';
 
 export default {
   name: 'interactionCreate',
@@ -78,6 +79,12 @@ export default {
             });
           }
           return;
+        }
+
+        // Xử lý reset user buttons
+        if (interaction.customId.startsWith('reset_')) {
+          const handled = await handleResetButton(interaction);
+          if (handled) return;
         }
 
         // Xử lý các button khác (fish, reset, etc.)

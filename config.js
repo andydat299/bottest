@@ -3,6 +3,7 @@ export const config = {
   clientId: process.env.CLIENT_ID,
   token: process.env.DISCORD_TOKEN,
   guildId: process.env.GUILD_ID,
-  prefix: 'f!'
+  prefix: 'f!',
+  admins: process.env.ADMIN_IDS ? process.env.ADMIN_IDS.split(',') : []
 };
 // Đạt Trần

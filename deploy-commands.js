@@ -10,7 +10,8 @@ console.log(`Found ${commandFiles.length} command files:`, commandFiles);
 for (const file of commandFiles) {
   console.log(`Loading ${file}...`);
   try {
-    const command = (await import(`./commands/${file}`)).default;
+    const commandModule = await import(`./commands/${file}`);
+    const command = commandModule.default || commandModule;
     if (command && command.data) {
       commands.push(command.data.toJSON());
       console.log(`✅ Loaded command: ${command.data.name}`);
