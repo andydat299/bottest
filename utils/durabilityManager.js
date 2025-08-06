@@ -36,11 +36,18 @@ export function calculateDurabilityLoss(rodLevel, isMiss = false) {
  * @param {number} rodLevel - Cấp cần câu
  * @param {number} currentDurability - Độ bền hiện tại
  * @param {number} maxDurability - Độ bền tối đa
- * @returns {number} - Phí sửa chữa cố định
+ * @param {string} repairType - Loại sửa chữa (full, partial, minimal)
+ * @returns {number} - Phí sửa chữa theo loại
  */
-export function calculateRepairCost(rodLevel, currentDurability, maxDurability) {
-  // Phí sửa chữa cố định 150 xu cho mọi cấp độ
-  return 150;
+export function calculateRepairCost(rodLevel, currentDurability, maxDurability, repairType = 'full') {
+  // Phí sửa chữa theo loại
+  const repairCosts = {
+    full: 75,      // Hoàn toàn (100%)
+    partial: 50,   // Một phần (50%)
+    minimal: 25    // Tối thiểu (25%)
+  };
+  
+  return repairCosts[repairType] || 75;
 }
 
 /**
