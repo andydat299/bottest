@@ -5,6 +5,7 @@ import { GlobalStats } from '../schemas/globalStatsSchema.js';
 import { selectRandomFish } from '../utils/fishingLogic.js';
 import { checkFishingCooldown, setFishingCooldown, clearFishingCooldown, formatCooldownTime } from '../utils/cooldownManager.js';
 import { updateQuestProgress } from '../utils/questManager.js';
+import { logFishing } from '../utils/logger.js';
 import { 
   getMaxDurability, 
   calculateDurabilityLoss, 
@@ -169,6 +170,9 @@ export default {
           user.fishingStats.missedCatches = (user.fishingStats.missedCatches || 0) + 1;
           await user.save();
           
+          // Log câu hụt
+          await logFishing(interaction.user, null, true);
+          
           // Xóa cooldown
           clearFishingCooldown(discordId);
           
@@ -203,6 +207,9 @@ export default {
         const fishCount = user.fish.get(fish.name) || 0;
         user.fish.set(fish.name, fishCount + 1);
         await user.save();
+
+        // Log câu cá thành công
+        await logFishing(interaction.user, fish, false);
 
         // Cập nhật quest progress
         await updateQuestProgress(discordId, 'fish', 1);

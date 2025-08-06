@@ -1,4 +1,5 @@
 import { Quest } from '../schemas/questSchema.js';
+import { logQuestComplete } from './logger.js';
 
 // Tạo quest mới cho ngày hôm nay
 export const generateDailyQuests = () => {
@@ -124,6 +125,9 @@ export const updateQuestProgress = async (discordId, questType, amount = 1, extr
           userQuests.dailyQuests.quests[i].completed = true;
           userQuests.totalQuestsCompleted++;
           console.log(`🎉 Quest completed: ${quest.description} (${oldCurrent} → ${userQuests.dailyQuests.quests[i].current}/${quest.target})`);
+          
+          // Log quest completion (cần user object, sẽ log trong command)
+          // Note: Sẽ log từ nơi gọi updateQuestProgress với user object
         }
         
         // Mark document as modified for nested arrays

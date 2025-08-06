@@ -2,6 +2,7 @@ import { SlashCommandBuilder } from 'discord.js';
 import { User } from '../schemas/userSchema.js';
 import { updateQuestProgress } from '../utils/questManager.js';
 import { getMaxDurability } from '../utils/durabilityManager.js';
+import { logUpgrade } from '../utils/logger.js';
 
 export default {
   data: new SlashCommandBuilder()
@@ -46,7 +47,8 @@ export default {
     }
 
     user.balance -= upgradeCost;
-    user.rodLevel = currentLevel + 1;
+    const newLevel = currentLevel + 1;
+    user.rodLevel = newLevel;
     
     // Cập nhật độ bền cho cần mới
     const newMaxDurability = getMaxDurability(user.rodLevel);
@@ -54,6 +56,9 @@ export default {
     user.rodDurability = newMaxDurability; // Cần mới = 100% độ bền
     
     await user.save();
+
+    // Log nâng cấp
+    await logUpgrade(interaction.user, currentLevel, newLevel, upgradeCost);
 
     // Cập nhật quest upgrade
     await updateQuestProgress(discordId, 'upgrade', 1);

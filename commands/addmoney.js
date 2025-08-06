@@ -1,6 +1,7 @@
 import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
 import { User } from '../schemas/userSchema.js';
 import { isAdmin, createNoPermissionEmbed, createSuccessEmbed, createErrorEmbed } from '../utils/adminUtils.js';
+import { logAdminAction } from '../utils/logger.js';
 
 const data = new SlashCommandBuilder()
   .setName('addmoney')
@@ -50,6 +51,9 @@ async function execute(interaction) {
       `Số dư cũ: **${oldBalance.toLocaleString()}** coins\n` +
       `Số dư mới: **${user.balance.toLocaleString()}** coins`
     );
+
+    // Log admin action
+    await logAdminAction(interaction.user, 'Thêm tiền', targetUser, amount);
 
     await interaction.reply({ embeds: [embed] });
 

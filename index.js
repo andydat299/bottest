@@ -2,6 +2,7 @@ import 'dotenv/config';
 import { Client, Collection, GatewayIntentBits, REST, Routes } from 'discord.js';
 import { config } from './config.js';
 import { connectDB } from './database/mongo.js';
+import { initLogger, logInfo, logError } from './utils/logger.js';
 import fs from 'fs';
 
 // Error handlers
@@ -101,8 +102,16 @@ for (const file of eventFiles) {
   console.log(`✅ Loaded event: ${event.name}`);
 }
 
-client.once('ready', () => {
+client.once('ready', async () => {
   console.log(`✅ Bot logged in as ${client.user.tag}`);
+  
+  // Khởi tạo logger
+  initLogger(client);
+  
+  // Log bot start
+  await logInfo('Bot Started', `${client.user.tag} đã khởi động thành công`, {
+    user: client.user
+  });
 });
 
 console.log('🔌 Connecting to database...');

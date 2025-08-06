@@ -68,9 +68,9 @@ async function showRepairMenu(interaction, user) {
   const partialRepairTarget = Math.min(currentDurability + Math.floor(maxDurability * 0.5), maxDurability);
   const minimalRepairTarget = Math.min(currentDurability + Math.floor(maxDurability * 0.25), maxDurability);
 
-  const fullCost = 150;      // Giá cố định
-  const partialCost = 150;   // Giá cố định  
-  const minimalCost = 150;   // Giá cố định
+  const fullCost = 100;      // Giá cố định
+  const partialCost = 50;   // Giá cố định  
+  const minimalCost = 250;   // Giá cố định
 
   const embed = new EmbedBuilder()
     .setColor('#FFA500')

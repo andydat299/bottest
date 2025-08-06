@@ -3,6 +3,7 @@ export const config = {
   clientId: process.env.CLIENT_ID,
   token: process.env.DISCORD_TOKEN,
   guildId: process.env.GUILD_ID,
+  logChannelId: process.env.LOG_CHANNEL_ID, // Kênh để ghi log
   prefix: 'f!',
   admins: process.env.ADMIN_IDS ? process.env.ADMIN_IDS.split(',') : []
 };
