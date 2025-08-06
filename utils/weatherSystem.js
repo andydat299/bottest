@@ -249,22 +249,39 @@ export function getEnvironmentModifiers(weatherOverride = null, timeOverride = n
   const weather = weatherOverride || getCurrentWeather();
   const timePeriod = timeOverride || getCurrentTimePeriod();
   
+  // Đảm bảo tất cả giá trị là số hợp lệ
+  const weatherFishRate = isNaN(weather.fishRateMultiplier) || !isFinite(weather.fishRateMultiplier) ? 1.0 : weather.fishRateMultiplier;
+  const timeFishRate = isNaN(timePeriod.fishRateMultiplier) || !isFinite(timePeriod.fishRateMultiplier) ? 1.0 : timePeriod.fishRateMultiplier;
+  
+  const weatherExp = isNaN(weather.experienceMultiplier) || !isFinite(weather.experienceMultiplier) ? 1.0 : (weather.experienceMultiplier || 1.0);
+  const timeExp = isNaN(timePeriod.experienceMultiplier) || !isFinite(timePeriod.experienceMultiplier) ? 1.0 : (timePeriod.experienceMultiplier || 1.0);
+  
+  const weatherCoin = isNaN(weather.coinMultiplier) || !isFinite(weather.coinMultiplier) ? 1.0 : (weather.coinMultiplier || 1.0);
+  const timeCoin = isNaN(timePeriod.coinMultiplier) || !isFinite(timePeriod.coinMultiplier) ? 1.0 : (timePeriod.coinMultiplier || 1.0);
+  
+  const weatherRare = isNaN(weather.rareFishBonus) || !isFinite(weather.rareFishBonus) ? 0.0 : weather.rareFishBonus;
+  const timeRare = isNaN(timePeriod.rareFishBonus) || !isFinite(timePeriod.rareFishBonus) ? 0.0 : timePeriod.rareFishBonus;
+  
   // Tổng hợp hệ số (nhân với nhau)
-  const fishRateMultiplier = weather.fishRateMultiplier * timePeriod.fishRateMultiplier;
-  const experienceMultiplier = (weather.experienceMultiplier || 1.0) * (timePeriod.experienceMultiplier || 1.0);
-  const coinMultiplier = (weather.coinMultiplier || 1.0) * (timePeriod.coinMultiplier || 1.0);
+  const fishRateMultiplier = weatherFishRate * timeFishRate;
+  const experienceMultiplier = weatherExp * timeExp;
+  const coinMultiplier = weatherCoin * timeCoin;
   
   // Tổng hợp bonus cá hiếm (cộng dồn)
-  const rareFishBonus = weather.rareFishBonus + timePeriod.rareFishBonus;
+  const rareFishBonus = weatherRare + timeRare;
   
-  return {
+  // Validation cuối cùng
+  const safeModifiers = {
     weather,
     timePeriod,
-    fishRateMultiplier: Math.round(fishRateMultiplier * 100) / 100,
-    rareFishBonus: Math.round(rareFishBonus * 100) / 100,
-    experienceMultiplier: Math.round(experienceMultiplier * 100) / 100,
-    coinMultiplier: Math.round(coinMultiplier * 100) / 100
+    fishRateMultiplier: isNaN(fishRateMultiplier) || !isFinite(fishRateMultiplier) ? 1.0 : Math.round(fishRateMultiplier * 100) / 100,
+    rareFishBonus: isNaN(rareFishBonus) || !isFinite(rareFishBonus) ? 0.0 : Math.round(rareFishBonus * 100) / 100,
+    experienceMultiplier: isNaN(experienceMultiplier) || !isFinite(experienceMultiplier) ? 1.0 : Math.round(experienceMultiplier * 100) / 100,
+    coinMultiplier: isNaN(coinMultiplier) || !isFinite(coinMultiplier) ? 1.0 : Math.round(coinMultiplier * 100) / 100
   };
+  
+  console.log('Environment modifiers calculated:', safeModifiers);
+  return safeModifiers;
 }
 
 /**

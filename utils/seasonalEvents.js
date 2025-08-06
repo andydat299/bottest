@@ -231,26 +231,38 @@ export function getEventModifiers() {
     };
   }
   
-  // Tính tổng hệ số (cộng dồn)
+  // Tính tổng hệ số (cộng dồn) với validation
   let fishRateMultiplier = 1.0;
   let rareFishBonus = 0;
   let experienceMultiplier = 1.0;
   let coinMultiplier = 1.0;
   
   for (const event of activeEvents) {
-    fishRateMultiplier *= event.modifiers.fishRateMultiplier;
-    rareFishBonus += event.modifiers.rareFishBonus;
-    experienceMultiplier *= event.modifiers.experienceMultiplier;
-    coinMultiplier *= event.modifiers.coinMultiplier;
+    if (event.modifiers) {
+      // Validation cho mỗi modifier
+      const eventFishRate = isNaN(event.modifiers.fishRateMultiplier) || !isFinite(event.modifiers.fishRateMultiplier) ? 1.0 : event.modifiers.fishRateMultiplier;
+      const eventRareBonus = isNaN(event.modifiers.rareFishBonus) || !isFinite(event.modifiers.rareFishBonus) ? 0 : event.modifiers.rareFishBonus;
+      const eventExpMult = isNaN(event.modifiers.experienceMultiplier) || !isFinite(event.modifiers.experienceMultiplier) ? 1.0 : event.modifiers.experienceMultiplier;
+      const eventCoinMult = isNaN(event.modifiers.coinMultiplier) || !isFinite(event.modifiers.coinMultiplier) ? 1.0 : event.modifiers.coinMultiplier;
+      
+      fishRateMultiplier *= eventFishRate;
+      rareFishBonus += eventRareBonus;
+      experienceMultiplier *= eventExpMult;
+      coinMultiplier *= eventCoinMult;
+    }
   }
   
-  return {
-    fishRateMultiplier: Math.round(fishRateMultiplier * 100) / 100,
-    rareFishBonus: Math.round(rareFishBonus * 100) / 100,
-    experienceMultiplier: Math.round(experienceMultiplier * 100) / 100,
-    coinMultiplier: Math.round(coinMultiplier * 100) / 100,
+  // Final validation
+  const safeModifiers = {
+    fishRateMultiplier: isNaN(fishRateMultiplier) || !isFinite(fishRateMultiplier) ? 1.0 : Math.round(fishRateMultiplier * 100) / 100,
+    rareFishBonus: isNaN(rareFishBonus) || !isFinite(rareFishBonus) ? 0 : Math.round(rareFishBonus * 100) / 100,
+    experienceMultiplier: isNaN(experienceMultiplier) || !isFinite(experienceMultiplier) ? 1.0 : Math.round(experienceMultiplier * 100) / 100,
+    coinMultiplier: isNaN(coinMultiplier) || !isFinite(coinMultiplier) ? 1.0 : Math.round(coinMultiplier * 100) / 100,
     activeEvents
   };
+  
+  console.log('Event modifiers calculated:', safeModifiers);
+  return safeModifiers;
 }
 
 /**
