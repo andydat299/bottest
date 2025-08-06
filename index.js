@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { Client, Collection, GatewayIntentBits } from 'discord.js';
+import { Client, Collection, GatewayIntentBits, REST, Routes } from 'discord.js';
 import { config } from './config.js';
 import { connectDB } from './database/mongo.js';
 import fs from 'fs';
@@ -32,7 +32,8 @@ client.commands = new Collection();
 
 console.log('📂 Loading commands...');
 
-// Load commands
+// Load commands và collect data để deploy
+const commands = [];
 const commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
 console.log(`Found ${commandFiles.length} command files:`, commandFiles);
 
@@ -44,6 +45,7 @@ for (const file of commandFiles) {
     
     if (command && command.data && command.data.name) {
       client.commands.set(command.data.name, command);
+      commands.push(command.data.toJSON());
       console.log(`✅ Loaded: ${command.data.name}`);
     } else {
       console.log(`❌ Failed to load ${file}: missing data or data.name`);
@@ -51,6 +53,21 @@ for (const file of commandFiles) {
   } catch (error) {
     console.log(`❌ Error loading ${file}:`, error.message);
   }
+}
+
+// Auto-deploy commands
+console.log('🔄 Auto-deploying commands...');
+try {
+  const rest = new REST({ version: '10' }).setToken(config.token);
+  
+  await rest.put(
+    Routes.applicationCommands(config.clientId),
+    { body: commands },
+  );
+  
+  console.log(`✅ Successfully deployed ${commands.length} application commands globally.`);
+} catch (error) {
+  console.error('❌ Error deploying commands:', error);
 }
 
 console.log('📂 Loading events...');
