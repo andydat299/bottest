@@ -14,7 +14,7 @@ import {
   getDurabilityEmoji,
   getDurabilityStatus 
 } from '../utils/durabilityManager.js';
-import { getCurrentWeather, getEnvironmentModifiers, getWeatherSpecialFish } from '../utils/weatherSystem.js';
+import { getCurrentWeather, getCurrentTimePeriod, getEnvironmentModifiers, getWeatherSpecialFish } from '../utils/weatherSystem.js';
 import { getEventModifiers, getEventSpecialFish, getEventDisplayInfo } from '../utils/seasonalEvents.js';
 import { getAvailableLocations, canFishAtLocation } from '../utils/fishingLocations.js';
 
@@ -94,7 +94,8 @@ export default {
 
     // Lấy thông tin môi trường và sự kiện
     const weatherInfo = getCurrentWeather();
-    let environmentModifiers = getEnvironmentModifiers(weatherInfo.weather, weatherInfo.timeOfDay);
+    const timeInfo = getCurrentTimePeriod();
+    let environmentModifiers = getEnvironmentModifiers(weatherInfo, timeInfo);
     let eventModifiers = getEventModifiers();
     const eventInfo = getEventDisplayInfo();
     
@@ -145,7 +146,7 @@ export default {
     
     // Thông tin môi trường
     const environmentInfo = [
-      `${weatherInfo.weatherEmoji} ${weatherInfo.weather} - ${weatherInfo.timeEmoji} ${weatherInfo.timeOfDay}`,
+      `${weatherInfo.emoji} ${weatherInfo.name} - ${timeInfo.emoji} ${timeInfo.name}`,
       `📍 Đang câu tại: **${currentLocation}**`
     ];
     
