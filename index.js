@@ -60,12 +60,27 @@ console.log('🔄 Auto-deploying commands...');
 try {
   const rest = new REST({ version: '10' }).setToken(config.token);
   
+  console.log(`📤 Deploying ${commands.length} commands...`);
+  
+  // Deploy globally (takes up to 1 hour to update)
   await rest.put(
     Routes.applicationCommands(config.clientId),
     { body: commands },
   );
   
-  console.log(`✅ Successfully deployed ${commands.length} application commands globally.`);
+  console.log(`✅ Successfully deployed ${commands.length} global commands.`);
+  console.log('⏰ Global commands may take up to 1 hour to appear.');
+  
+  // Also deploy to guild for instant updates (if guild ID is provided)
+  if (config.guildId) {
+    console.log('🏃‍♂️ Also deploying to guild for instant updates...');
+    await rest.put(
+      Routes.applicationGuildCommands(config.clientId, config.guildId),
+      { body: commands },
+    );
+    console.log(`✅ Guild commands deployed instantly to server ${config.guildId}`);
+  }
+  
 } catch (error) {
   console.error('❌ Error deploying commands:', error);
 }
