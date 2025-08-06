@@ -459,3 +459,6 @@ export function getSystemStatus() {
     status: `🌤️ Thời tiết: ${weatherSystemEnabled ? '✅ BẬT' : '❌ TẮT'}\n⏰ Thời gian: ${timeSystemEnabled ? '✅ BẬT' : '❌ TẮT'}`
   };
 }
+
+// Export constants
+export { WEATHER_TYPES, TIME_PERIODS };
