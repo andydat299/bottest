@@ -177,10 +177,30 @@ let currentWeather = null;
 let weatherLastUpdate = 0;
 const WEATHER_UPDATE_INTERVAL = 30 * 60 * 1000; // 30 phút
 
+// Admin controls - mặc định TẮT
+let weatherSystemEnabled = false;
+let timeSystemEnabled = false;
+
 /**
  * Lấy thời tiết hiện tại
  */
 export function getCurrentWeather() {
+  // Nếu hệ thống thời tiết bị tắt, trả về thời tiết mặc định
+  if (!weatherSystemEnabled) {
+    return {
+      type: 'SUNNY',
+      name: 'Nắng',
+      emoji: '☀️',
+      description: 'Thời tiết bình thường (hệ thống tắt)',
+      fishRateMultiplier: 1.0,
+      rareFishBonus: 0,
+      experienceMultiplier: 1.0,
+      coinMultiplier: 1.0,
+      weight: 30,
+      specialFish: []
+    };
+  }
+  
   const now = Date.now();
   
   // Kiểm tra nếu cần update thời tiết
@@ -220,6 +240,22 @@ function generateRandomWeather() {
  * Lấy thời gian hiện tại (theo giờ Việt Nam)
  */
 export function getCurrentTimePeriod() {
+  // Nếu hệ thống thời gian bị tắt, trả về thời gian mặc định
+  if (!timeSystemEnabled) {
+    return {
+      type: 'MORNING',
+      name: 'Buổi sáng',
+      emoji: '🌞',
+      hour: new Date().getHours(),
+      description: 'Thời gian bình thường (hệ thống tắt)',
+      fishRateMultiplier: 1.0,
+      rareFishBonus: 0,
+      experienceMultiplier: 1.0,
+      coinMultiplier: 1.0,
+      specialFish: []
+    };
+  }
+  
   const now = new Date();
   const vietnamTime = new Date(now.getTime() + (7 * 60 * 60 * 1000)); // UTC+7
   const hour = vietnamTime.getUTCHours();
@@ -390,4 +426,36 @@ export function forceUpdateWeather() {
   currentWeather = generateRandomWeather();
   weatherLastUpdate = Date.now();
   return currentWeather;
+}
+
+/**
+ * Admin functions - Bật/tắt hệ thống
+ */
+export function enableWeatherSystem() {
+  weatherSystemEnabled = true;
+  forceUpdateWeather(); // Tạo thời tiết mới ngay lập tức
+  return { success: true, message: '✅ Đã bật hệ thống thời tiết!' };
+}
+
+export function disableWeatherSystem() {
+  weatherSystemEnabled = false;
+  return { success: true, message: '❌ Đã tắt hệ thống thời tiết!' };
+}
+
+export function enableTimeSystem() {
+  timeSystemEnabled = true;
+  return { success: true, message: '✅ Đã bật hệ thống thời gian!' };
+}
+
+export function disableTimeSystem() {
+  timeSystemEnabled = false;
+  return { success: true, message: '❌ Đã tắt hệ thống thời gian!' };
+}
+
+export function getSystemStatus() {
+  return {
+    weatherEnabled: weatherSystemEnabled,
+    timeEnabled: timeSystemEnabled,
+    status: `🌤️ Thời tiết: ${weatherSystemEnabled ? '✅ BẬT' : '❌ TẮT'}\n⏰ Thời gian: ${timeSystemEnabled ? '✅ BẬT' : '❌ TẮT'}`
+  };
 }

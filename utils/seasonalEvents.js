@@ -155,10 +155,18 @@ let currentActiveEvents = [];
 let lastEventCheck = 0;
 const EVENT_CHECK_INTERVAL = 60 * 60 * 1000; // 1 giờ
 
+// Admin controls - mặc định TẮT
+let eventSystemEnabled = false;
+
 /**
  * Kiểm tra events đang hoạt động
  */
 export function getActiveEvents() {
+  // Nếu hệ thống event bị tắt, không có event nào hoạt động
+  if (!eventSystemEnabled) {
+    return [];
+  }
+  
   const now = Date.now();
   
   // Kiểm tra lại mỗi giờ
@@ -324,6 +332,13 @@ export function getEventDisplayInfo() {
   const activeEvents = getActiveEvents();
   const modifiers = getEventModifiers();
   
+  if (!eventSystemEnabled) {
+    return {
+      hasEvents: false,
+      message: '🌟 Hệ thống sự kiện đang tắt'
+    };
+  }
+  
   if (activeEvents.length === 0) {
     return {
       hasEvents: false,
@@ -354,5 +369,30 @@ export function getEventDisplayInfo() {
     events: eventList,
     effects: effectList.join(' • '),
     count: activeEvents.length
+  };
+}
+
+/**
+ * Admin functions - Bật/tắt hệ thống events
+ */
+export function enableEventSystem() {
+  eventSystemEnabled = true;
+  // Force refresh events
+  currentActiveEvents = checkActiveEvents();
+  lastEventCheck = Date.now();
+  return { success: true, message: '✅ Đã bật hệ thống sự kiện!' };
+}
+
+export function disableEventSystem() {
+  eventSystemEnabled = false;
+  currentActiveEvents = [];
+  return { success: true, message: '❌ Đã tắt hệ thống sự kiện!' };
+}
+
+export function getEventSystemStatus() {
+  return {
+    eventEnabled: eventSystemEnabled,
+    activeEventsCount: currentActiveEvents.length,
+    status: `🎉 Hệ thống sự kiện: ${eventSystemEnabled ? '✅ BẬT' : '❌ TẮT'}`
   };
 }

@@ -1,6 +1,6 @@
 import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
-import { getCurrentWeather, getEnvironmentModifiers, WEATHER_TYPES, TIME_PERIODS } from '../utils/weatherSystem.js';
-import { getEventDisplayInfo } from '../utils/seasonalEvents.js';
+import { getCurrentWeather, getEnvironmentModifiers, getSystemStatus, WEATHER_TYPES, TIME_PERIODS } from '../utils/weatherSystem.js';
+import { getEventDisplayInfo, getEventSystemStatus } from '../utils/seasonalEvents.js';
 
 export const data = new SlashCommandBuilder()
     .setName('weather')
@@ -42,11 +42,31 @@ async function showCurrentWeather(interaction) {
     const environmentModifiers = getEnvironmentModifiers();
     const { weather, timePeriod } = environmentModifiers;
     const eventInfo = getEventDisplayInfo();
+    const systemStatus = getSystemStatus();
+    const eventSystemStatus = getEventSystemStatus();
     
     const embed = new EmbedBuilder()
         .setColor(getWeatherColor(weather.name))
         .setTitle('🌤️ Thông Tin Môi Trường Hiện Tại')
         .setTimestamp();
+    
+    // Hiển thị trạng thái hệ thống
+    let statusText = '';
+    if (!systemStatus.weatherEnabled && !systemStatus.timeEnabled) {
+        statusText = '⚠️ **Hệ thống thời tiết và thời gian đang TẮT**\n';
+    } else if (!systemStatus.weatherEnabled) {
+        statusText = '⚠️ **Hệ thống thời tiết đang TẮT**\n';
+    } else if (!systemStatus.timeEnabled) {
+        statusText = '⚠️ **Hệ thống thời gian đang TẮT**\n';
+    }
+    
+    if (!eventSystemStatus.eventEnabled) {
+        statusText += '⚠️ **Hệ thống sự kiện đang TẮT**\n';
+    }
+    
+    if (statusText) {
+        embed.setDescription(statusText);
+    }
     
     // Thông tin thời tiết và thời gian
     embed.addFields(
