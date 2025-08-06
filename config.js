@@ -7,4 +7,12 @@ export const config = {
   prefix: 'f!',
   admins: process.env.ADMIN_IDS ? process.env.ADMIN_IDS.split(',') : []
 };
+
+/**
+ * Kiểm tra xem user có phải admin không
+ */
+export function isAdmin(userId) {
+  return config.admins.includes(userId);
+}
+
 // Đạt Trần

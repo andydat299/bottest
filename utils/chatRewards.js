@@ -1,7 +1,7 @@
 /**
  * Chat Rewards System - Hệ thống thưởng xu khi chat
  */
-import User from '../schemas/userSchema.js';
+import { User } from '../schemas/userSchema.js';
 
 // Cấu hình chat rewards
 const CHAT_REWARD_CONFIG = {
