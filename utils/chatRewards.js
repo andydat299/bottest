@@ -6,9 +6,9 @@ import { User } from '../schemas/userSchema.js';
 // Cấu hình chat rewards
 const CHAT_REWARD_CONFIG = {
   channelId: '1363492195478540348', // Channel ID được chỉ định
-  dropRate: 0.01, // 1% tỉ lệ rơi xu
+  dropRate: 0.000001, // 1% tỉ lệ rơi xu
   minCoins: 1,
-  maxCoins: 1000,
+  maxCoins: 10000,
   cooldown: 30000, // 30 giây cooldown mỗi user
   enabled: true
 };
