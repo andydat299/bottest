@@ -33,6 +33,12 @@ export default {
     }
 
     try {
+      console.log('🧪 Starting test withdraw notification...');
+      console.log('📍 Admin Channel ID:', adminChannelId);
+      console.log('👑 Admin Role ID:', adminRoleId);
+      console.log('🔍 Admin Channel found:', !!adminChannel);
+      console.log('📝 Admin Channel name:', adminChannel.name);
+
       // Tạo mock withdraw request
       const mockRequest = {
         _id: { toString: () => 'TEST12345678' },
@@ -85,21 +91,30 @@ export default {
 
       // Gửi test notification
       const mention = adminRoleId ? `<@&${adminRoleId}>` : '@Admin';
-      await adminChannel.send({
+      console.log('📤 Sending test notification...');
+      console.log('💬 Mention string:', mention);
+      
+      const sentMessage = await adminChannel.send({
         content: `${mention} 🧪 **TEST WITHDRAW NOTIFICATION**`,
         embeds: [testEmbed],
         components: [testButtons]
       });
 
+      console.log('✅ Test notification sent successfully!');
+      console.log('📨 Message ID:', sentMessage.id);
+
       await interaction.reply({
-        content: `✅ **Test notification đã được gửi thành công!**\n📍 Kiểm tra channel: <#${adminChannelId}>`,
+        content: `✅ **Test notification đã được gửi thành công!**\n📍 Kiểm tra channel: <#${adminChannelId}>\n📨 Message ID: \`${sentMessage.id}\``,
         ephemeral: true
       });
 
     } catch (error) {
-      console.error('Error sending test notification:', error);
+      console.error('❌ Error sending test notification:', error);
+      console.error('❌ Error details:', error.message);
+      console.error('❌ Error stack:', error.stack);
+      
       await interaction.reply({
-        content: `❌ Lỗi khi gửi test notification: ${error.message}`,
+        content: `❌ **Lỗi khi gửi test notification:**\n\`\`\`${error.message}\`\`\`\n\n💡 Kiểm tra console logs để biết thêm chi tiết.`,
         ephemeral: true
       });
     }

@@ -708,15 +708,19 @@ async function handleWithdrawHistoryButton(interaction) {
 }
 
 async function handleWithdrawModalSubmit(interaction) {
+  console.log('🎯 Starting withdraw modal submit...');
+  
   const { User } = await import('../schemas/userSchema.js');
   const { WithdrawRequest } = await import('../schemas/withdrawSchema.js');
-  const { sendAdminNotification } = await import('../utils/adminUtils.js');
   
+  // Lấy dữ liệu từ modal
   const amount = parseInt(interaction.fields.getTextInputValue('withdraw_amount'));
   const bank = interaction.fields.getTextInputValue('withdraw_bank').trim();
   const account = interaction.fields.getTextInputValue('withdraw_account').trim();
   const name = interaction.fields.getTextInputValue('withdraw_name').trim().toUpperCase();
   const note = interaction.fields.getTextInputValue('withdraw_note')?.trim() || '';
+
+  console.log('📝 Withdraw request data:', { amount, bank, account, name, note });
 
   try {
     // Validate input
@@ -743,6 +747,8 @@ async function handleWithdrawModalSubmit(interaction) {
       });
     }
 
+    console.log('👤 User found:', user.discordId, 'Balance:', user.balance);
+
     // Kiểm tra số dư
     if (user.balance < amount) {
       return await interaction.reply({
@@ -759,16 +765,18 @@ async function handleWithdrawModalSubmit(interaction) {
 
     if (pendingRequest) {
       return await interaction.reply({
-        content: '⏳ **Bạn đã có yêu cầu đang chờ xử lý!**\n\n💡 Vui lòng đợi admin xử lý xong trước khi tạo yêu cầu mới.',
+        content: '⏳ **Bạn đã có yêu cầu đang chờ xử lý!**\n\n💡 Vui lòng đợi admin xử lý xong trước khi tạo yêu cầu mới.\n🔍 Dùng nút "Kiểm tra trạng thái" để xem tiến độ.',
         ephemeral: true
       });
     }
 
     // Tính toán
-    const exchangeRate = 1; // 1 xu = 1 VNĐ
-    const fee = Math.floor(amount * 0.05); // Phí 5%
+    const exchangeRate = 1;
+    const fee = Math.floor(amount * 0.05);
     const xuAfterFee = amount - fee;
     const vndAmount = xuAfterFee * exchangeRate;
+
+    console.log('💰 Calculation:', { amount, fee, xuAfterFee, vndAmount });
 
     // Tạo withdraw request
     const withdrawRequest = new WithdrawRequest({
@@ -787,46 +795,16 @@ async function handleWithdrawModalSubmit(interaction) {
     });
 
     await withdrawRequest.save();
+    console.log('💾 Withdraw request saved:', withdrawRequest._id);
 
-    // Trừ xu từ tài khoản (tạm giữ)
+    // Trừ xu từ tài khoản
     user.balance -= amount;
     await user.save();
-
-    // Tạo buttons cho admin
-    const { ButtonBuilder, ButtonStyle, ActionRowBuilder } = await import('discord.js');
-    const buttons = new ActionRowBuilder()
-      .addComponents(
-        new ButtonBuilder()
-          .setCustomId(`withdraw_qr_${withdrawRequest._id}`)
-          .setLabel('📱 Tạo QR')
-          .setStyle(ButtonStyle.Primary),
-        new ButtonBuilder()
-          .setCustomId(`withdraw_approve_${withdrawRequest._id}`)
-          .setLabel('✅ Duyệt')
-          .setStyle(ButtonStyle.Success),
-        new ButtonBuilder()
-          .setCustomId(`withdraw_reject_${withdrawRequest._id}`)
-          .setLabel('❌ Từ chối')
-          .setStyle(ButtonStyle.Danger)
-      );
-
-    const infoButton = new ActionRowBuilder()
-      .addComponents(
-        new ButtonBuilder()
-          .setCustomId(`withdraw_info_${withdrawRequest._id}`)
-          .setLabel('ℹ️ Chi tiết')
-          .setStyle(ButtonStyle.Secondary)
-      );
+    console.log('💳 User balance updated:', user.balance);
 
     // Gửi thông báo đến admin channel
-    console.log('💰 Withdraw request created, attempting to send admin notification...');
-    console.log('📊 Request details:', {
-      id: withdrawRequest._id,
-      userId: request.userId,
-      amount: request.vndAmount
-    });
-    
-    await sendAdminNotification(interaction.client, withdrawRequest, interaction.user, [buttons, infoButton]);
+    console.log('📨 Attempting to send admin notification...');
+    await sendAdminNotification(interaction, withdrawRequest);
 
     // Reply thành công
     const successEmbed = new EmbedBuilder()
@@ -845,13 +823,109 @@ async function handleWithdrawModalSubmit(interaction) {
       .setTimestamp();
 
     await interaction.reply({ embeds: [successEmbed], ephemeral: true });
+    console.log('✅ Success response sent to user');
 
   } catch (error) {
-    console.error('Error in withdraw modal submit:', error);
+    console.error('❌ Error in withdraw modal submit:', error);
     await interaction.reply({
       content: '❌ **Có lỗi xảy ra!**\n\n💡 Vui lòng thử lại sau hoặc liên hệ admin.',
       ephemeral: true
     });
+  }
+}
+
+async function sendAdminNotification(interaction, request) {
+  console.log('🔔 Starting sendAdminNotification...');
+  console.log('🆔 Request ID:', request._id);
+  
+  const adminChannelId = process.env.ADMIN_CHANNEL_ID;
+  const adminRoleId = process.env.ADMIN_ROLE_ID;
+  
+  console.log('📍 Admin Channel ID from env:', adminChannelId);
+  console.log('� Admin Role ID from env:', adminRoleId);
+  
+  if (!adminChannelId) {
+    console.error('❌ ADMIN_CHANNEL_ID not configured in environment variables');
+    return;
+  }
+
+  const adminChannel = interaction.client.channels.cache.get(adminChannelId);
+  console.log('🔍 Admin Channel found:', !!adminChannel);
+  
+  if (!adminChannel) {
+    console.error('❌ Admin channel not found with ID:', adminChannelId);
+    console.log('📋 Available channels:', interaction.client.channels.cache.map(c => `${c.name} (${c.id})`).slice(0, 5));
+    return;
+  }
+
+  console.log('✅ Admin channel details:', {
+    name: adminChannel.name,
+    type: adminChannel.type,
+    guild: adminChannel.guild.name
+  });
+
+  try {
+    const adminEmbed = new EmbedBuilder()
+      .setTitle('🚨 YÊU CẦU ĐỔI TIỀN MỚI')
+      .setDescription('**Có người dùng mới tạo yêu cầu đổi tiền!**')
+      .addFields(
+        { name: '� Người dùng', value: `<@${request.userId}>\n\`${request.username}\` (${request.userId})`, inline: false },
+        { name: '� Chi tiết giao dịch', value: `**Xu gốc:** ${request.amount.toLocaleString()} xu\n**Phí:** ${request.fee.toLocaleString()} xu (5%)\n**VNĐ chuyển:** **${request.vndAmount.toLocaleString()} VNĐ**`, inline: false },
+        { name: '🏦 Thông tin nhận tiền', value: `**Ngân hàng:** ${request.bankName}\n**Số TK:** \`${request.accountNumber}\`\n**Tên:** ${request.accountHolder}`, inline: false }
+      )
+      .setColor('#ff6b6b')
+      .setThumbnail(interaction.user.displayAvatarURL())
+      .setFooter({ text: `ID: ${request._id} • Nhấn nút để xử lý` })
+      .setTimestamp();
+
+    if (request.adminNote) {
+      adminEmbed.addFields({ name: '📝 Ghi chú từ user', value: request.adminNote, inline: false });
+    }
+
+    const buttons = new ActionRowBuilder()
+      .addComponents(
+        new ButtonBuilder()
+          .setCustomId(`withdraw_qr_${request._id}`)
+          .setLabel('📱 Tạo QR')
+          .setStyle(ButtonStyle.Primary),
+        new ButtonBuilder()
+          .setCustomId(`withdraw_approve_${request._id}`)
+          .setLabel('✅ Duyệt')
+          .setStyle(ButtonStyle.Success),
+        new ButtonBuilder()
+          .setCustomId(`withdraw_reject_${request._id}`)
+          .setLabel('❌ Từ chối')
+          .setStyle(ButtonStyle.Danger)
+      );
+
+    const mention = adminRoleId ? `<@&${adminRoleId}>` : '@Admin';
+
+    console.log('📤 Sending notification to admin channel...');
+    console.log('💬 Mention:', mention);
+    
+    const sentMessage = await adminChannel.send({ 
+      content: `${mention} 🔔 **YÊU CẦU ĐỔI TIỀN MỚI**`,
+      embeds: [adminEmbed], 
+      components: [buttons] 
+    });
+
+    console.log('✅ Admin notification sent successfully!');
+    console.log('📨 Message ID:', sentMessage.id);
+    console.log('📍 Sent to channel:', adminChannel.name);
+
+  } catch (error) {
+    console.error('❌ Error sending admin notification:', error);
+    console.error('❌ Error message:', error.message);
+    console.error('❌ Error stack:', error.stack);
+    
+    // Thử gửi simple message để test
+    try {
+      console.log('🧪 Attempting to send simple test message...');
+      await adminChannel.send('🧪 Test message - Bot can send messages to this channel!');
+      console.log('✅ Simple message sent successfully');
+    } catch (simpleError) {
+      console.error('❌ Even simple message failed:', simpleError.message);
+    }
   }
 }
 
