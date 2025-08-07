@@ -163,7 +163,8 @@ function createGameEmbed(gameStatus, user) {
 }
 
 function createGameButtons(gameStatus) {
-  if (gameStatus.isFinished) return [];
+  // Nếu game đã kết thúc, không cần buttons
+  if (gameStatus.isFinished) return null;
 
   const row = new ActionRowBuilder();
 

@@ -181,7 +181,7 @@ async function handleBlackjackBetModal(interaction) {
   await interaction.reply({
     content: result.message,
     embeds: [embed],
-    components: buttons.length > 0 ? [buttons] : [],
+    components: buttons ? [buttons] : [],
     ephemeral: true
   });
 }
@@ -206,7 +206,7 @@ async function handleBlackjackButtons(interaction) {
 
       await interaction.update({
         embeds: [hitEmbed],
-        components: hitButtons.length > 0 ? [hitButtons] : []
+        components: hitButtons ? [hitButtons] : []
       });
       break;
 

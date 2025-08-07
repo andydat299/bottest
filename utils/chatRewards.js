@@ -6,7 +6,7 @@ import { User } from '../schemas/userSchema.js';
 // Cấu hình chat rewards
 const CHAT_REWARD_CONFIG = {
   channelId: '1363492195478540348', // Channel ID được chỉ định
-  dropRate: 0.01, // 10% tỉ lệ rơi xu
+  dropRate: 0.1, // 10% tỉ lệ rơi xu
   minCoins: 1,
   maxCoins: 1000, // Quay về 1-1000 xu như yêu cầu ban đầu
   cooldown: 30000, // 30 giây cooldown mỗi user
@@ -80,7 +80,7 @@ export async function processChatMessage(message) {
       userId: message.author.id,
       username: message.author.username,
       coins: rewardCoins,
-      newBalance: user.money,
+      newBalance: user.balance,
       channel: message.channel.name
     };
     
