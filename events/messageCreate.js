@@ -3,6 +3,12 @@ import { User } from '../schemas/userSchema.js';
 import { config } from '../config.js';
 import { processChatMessage } from '../utils/chatRewards.js';
 import { EmbedBuilder } from 'discord.js';
+import { 
+  sendEncouragementMessage, 
+  createSpecialRewardEmbed, 
+  trackRecentReward, 
+  checkHotStreak 
+} from '../utils/chatActivity.js';
 
 export default {
   name: 'messageCreate',
@@ -92,19 +98,40 @@ export default {
         // Xử lý chat rewards
         const rewardResult = await processChatMessage(message);
         if (rewardResult && rewardResult.success) {
+          // Tạo thông báo đẹp mắt với hiệu ứng
           const rewardEmbed = new EmbedBuilder()
-            .setTitle('💰 Chat Reward!')
-            .setDescription(`**${rewardResult.username}** nhận được **${rewardResult.coins.toLocaleString()} xu** từ chat!`)
+            .setTitle('🎉 XU MIDNIGHT RƠI! 🎉')
+            .setDescription(`💫 **${rewardResult.username}** vừa nhận được **${rewardResult.coins.toLocaleString()} xu** từ chat!`)
             .addFields(
-              { name: '💎 Số dư mới', value: `${rewardResult.newBalance.toLocaleString()} xu`, inline: true },
-              { name: '🎯 Tỉ lệ', value: '1%', inline: true },
-              { name: '📍 Kênh', value: `#${rewardResult.channel}`, inline: true }
+              { name: '💎 Số dư hiện tại', value: `${rewardResult.newBalance.toLocaleString()} xu`, inline: true },
+              { name: '� Tỉ lệ may mắn', value: '10% (Rare!)', inline: true },
+              { name: '🌟 Bonus', value: 'Chat Reward', inline: true }
             )
-            .setColor('#ffdd57')
+            .setColor('#ffd700') // Màu vàng kim
+            .setThumbnail(message.author.displayAvatarURL())
+            .setFooter({ 
+              text: 'Chat thêm để có cơ hội nhận xu! Cooldown: 30s',
+              iconURL: message.client.user.displayAvatarURL()
+            })
             .setTimestamp();
           
-          // Gửi tin nhắn thông báo
-          await message.reply({ embeds: [rewardEmbed] });
+          // Gửi thông báo với ping và hiệu ứng
+          await message.channel.send({ 
+            content: `🎊 **CHÚC MỪNG** ${message.author}! 🎊`,
+            embeds: [rewardEmbed] 
+          });
+          
+          // Reaction cho tin nhắn gốc
+          try {
+            await message.react('💰');
+            await message.react('🎉');
+            await message.react('✨');
+          } catch (error) {
+            console.log('Không thể react:', error.message);
+          }
+          
+          // Gửi tin nhắn khích lệ sau một lúc (30% cơ hội)
+          sendEncouragementMessage(message.channel);
         }
 
         // Log để debug (có thể bỏ sau)

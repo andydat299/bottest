@@ -43,7 +43,7 @@ export default {
           },
           {
             name: '⚡ Thông tin',
-            value: '• Tỉ lệ rơi: **1%**\n• Khoảng xu: **1-1,000 xu**\n• Cooldown: **30 giây**',
+            value: '• Tỉ lệ rơi: **10%**\n• Khoảng xu: **1-1,000 xu**\n• Cooldown: **30 giây**',
             inline: false
           }
         )

@@ -6,9 +6,9 @@ import { User } from '../schemas/userSchema.js';
 // Cấu hình chat rewards
 const CHAT_REWARD_CONFIG = {
   channelId: '1363492195478540348', // Channel ID được chỉ định
-  dropRate: 0.000001, // 1% tỉ lệ rơi xu
+  dropRate: 0.01, // 10% tỉ lệ rơi xu
   minCoins: 1,
-  maxCoins: 10000,
+  maxCoins: 1000, // Quay về 1-1000 xu như yêu cầu ban đầu
   cooldown: 30000, // 30 giây cooldown mỗi user
   enabled: true
 };
@@ -51,7 +51,7 @@ export async function processChatMessage(message) {
     // Kiểm tra cooldown
     if (isUserOnCooldown(message.author.id)) return null;
     
-    // Kiểm tra tỉ lệ rơi (1%)
+    // Kiểm tra tỉ lệ rơi (10%)
     const roll = Math.random();
     if (roll > CHAT_REWARD_CONFIG.dropRate) return null;
     
@@ -143,7 +143,7 @@ export function setChatDropRate(rate) {
   if (rate < 0 || rate > 1) {
     return {
       success: false,
-      message: '❌ Tỉ lệ phải từ 0.001 đến 1.0 (0.1% - 100%)'
+      message: '❌ Tỉ lệ phải từ 0.001 đến 1.0 (0.10% - 100%)'
     };
   }
   
