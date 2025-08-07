@@ -1,0 +1,29 @@
+{
+  "name": "fishbot",
+  "version": "1.0.0",
+  "description": "Discord fishing bot with casino games",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js",
+    "check": "node startup-check.js",
+    "debug": "node --inspect index.js",
+    "test": "node startup-check.js",
+    "deploy": "node deploy-commands.js",
+    "safe-start": "node startup-check.js || node index-fixed.js"
+  },
+  "dependencies": {
+    "discord.js": "^14.14.1",
+    "mongoose": "^8.0.3",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "author": "Your Name",
+  "license": "MIT"
+}
