@@ -60,10 +60,10 @@ export async function processChatMessage(message) {
     
     // Cập nhật database
     const user = await User.findOneAndUpdate(
-      { userId: message.author.id },
+      { discordId: message.author.id },
       { 
         $inc: { 
-          money: rewardCoins,
+          balance: rewardCoins,
           'stats.totalChatRewards': rewardCoins,
           'stats.chatRewardCount': 1
         }
@@ -98,7 +98,7 @@ export async function processChatMessage(message) {
  */
 export async function getChatRewardStats(userId) {
   try {
-    const user = await User.findOne({ userId });
+    const user = await User.findOne({ discordId: userId });
     if (!user) return null;
     
     return {

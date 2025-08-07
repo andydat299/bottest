@@ -246,10 +246,10 @@ class BlackjackGame {
     // Cập nhật database
     try {
       await User.findOneAndUpdate(
-        { userId: this.userId },
+        { discordId: this.userId },
         { 
           $inc: { 
-            money: winAmount,
+            balance: winAmount,
             'stats.blackjackGames': 1,
             'stats.blackjackWinnings': winAmount
           }
@@ -285,8 +285,8 @@ export async function startBlackjackGame(userId, betAmount) {
 
   // Kiểm tra user có đủ xu không
   try {
-    const user = await User.findOne({ userId });
-    if (!user || user.money < betAmount) {
+    const user = await User.findOne({ discordId: userId });
+    if (!user || user.balance < betAmount) {
       return {
         success: false,
         message: `❌ Bạn không đủ xu để cược! Cần ${betAmount.toLocaleString()} xu.`
@@ -295,8 +295,8 @@ export async function startBlackjackGame(userId, betAmount) {
 
     // Trừ xu cược trước
     await User.findOneAndUpdate(
-      { userId },
-      { $inc: { money: -betAmount } }
+      { discordId: userId },
+      { $inc: { balance: -betAmount } }
     );
 
     // Tạo game mới
@@ -390,8 +390,8 @@ export async function cancelBlackjackGame(userId) {
   // Hoàn tiền cược
   try {
     await User.findOneAndUpdate(
-      { userId },
-      { $inc: { money: game.betAmount } }
+      { discordId: userId },
+      { $inc: { balance: game.betAmount } }
     );
 
     activeGames.delete(userId);
@@ -414,7 +414,7 @@ export async function cancelBlackjackGame(userId) {
  */
 export async function getBlackjackStats(userId) {
   try {
-    const user = await User.findOne({ userId });
+    const user = await User.findOne({ discordId: userId });
     if (!user) return null;
 
     return {

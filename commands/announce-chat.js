@@ -53,7 +53,7 @@ export default {
       )
       .setColor('#ffd700')
       .setThumbnail('https://cdn.discordapp.com/emojis/851461487498887168.png')
-      .setImage('https://media.giphy.com/media/3o7TKB3oifq46DDhOE/giphy.gif') // GIF vàng kim
+      .setImage('https://media.discordapp.net/attachments/1244512399503921152/1295777120764690514/Thiet_ke_chua_co_ten_7.gif?ex=6895753b&is=689423bb&hm=65433afcab97f24bde7dcd5bd36081ea3db2018b914d65dac834f2e758b837d1&width=1177&height=662&') // GIF vàng kim
       .setFooter({ 
         text: 'Chúc các bạn may mắn và nhận được nhiều xu! ✨',
         iconURL: interaction.client.user.displayAvatarURL()
