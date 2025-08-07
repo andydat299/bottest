@@ -98,12 +98,50 @@ export function generateBankingLinks(bankInfo, amount, content) {
 }
 
 /**
- * Tạo embed hiển thị QR code và thông tin chuyển khoản
+ * Tạo embed và button cho QR code chuyển khoản
  * @param {import('discord.js').EmbedBuilder} EmbedBuilder
  * @param {Object} request - Withdraw request
- * @returns {import('discord.js').EmbedBuilder}
+ * @returns {Object} { embed, bankingLink }
  */
 export function createQREmbed(EmbedBuilder, request) {
+  const qrUrl = generateBankQR(
+    {
+      bankName: request.bankName,
+      accountNumber: request.accountNumber,
+      accountHolder: request.accountHolder
+    },
+    request.vndAmount,
+    `Rut xu game - ID:${request._id.toString().slice(-8)}`
+  );
+
+  const bankingLink = generateBankingLinks(
+    {
+      bankName: request.bankName,
+      accountNumber: request.accountNumber,
+      accountHolder: request.accountHolder
+    },
+    request.vndAmount,
+    `Rut xu game - ID:${request._id.toString().slice(-8)}`
+  );
+
+  const embed = new EmbedBuilder()
+    .setTitle('📱 QR CODE CHUYỂN KHOẢN')
+    .setDescription('**Quét QR hoặc click Quick Transfer để mở app banking**')
+    .addFields(
+      { name: '🏦 Ngân hàng', value: request.bankName.toUpperCase(), inline: true },
+      { name: '🔢 Số tài khoản', value: `\`${request.accountNumber}\``, inline: true },
+      { name: '👤 Tên người nhận', value: request.accountHolder, inline: true },
+      { name: '💰 Số tiền', value: `**${request.vndAmount.toLocaleString()} VNĐ**`, inline: true },
+      { name: '📝 Nội dung CK', value: `\`Rut xu game - ID:${request._id.toString().slice(-8)}\``, inline: true },
+      { name: '📋 Copy thông tin', value: `**STK:** \`${request.accountNumber}\`\n**Tên:** \`${request.accountHolder}\`\n**Số tiền:** \`${request.vndAmount.toLocaleString()}\``, inline: false }
+    )
+    .setImage(qrUrl)
+    .setColor('#00ff00')
+    .setFooter({ text: 'Quét QR hoặc dùng Quick Transfer • Click ✅ Duyệt sau khi chuyển xong' })
+    .setTimestamp();
+
+  return { embed, bankingLink };
+}
   const qrUrl = generateBankQR(
     {
       bankName: request.bankName,

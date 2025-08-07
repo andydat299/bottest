@@ -941,6 +941,9 @@ async function sendAdminNotification(interaction, request) {
 async function handleWithdrawButtons(interaction) {
   const [action, operation, requestId] = interaction.customId.split('_');
   
+  // Import EmbedBuilder
+  const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = await import('discord.js');
+  
   // Kiểm tra quyền admin
   const { isAdmin } = await import('../utils/adminUtils.js');
   if (!isAdmin(interaction.user.id)) {
@@ -971,20 +974,25 @@ async function handleWithdrawButtons(interaction) {
     }
 
     if (operation === 'approve') {
+      console.log('👨‍💼 Admin approving withdraw request:', requestId);
+      
       // Duyệt yêu cầu
       request.status = 'approved';
       request.adminId = interaction.user.id;
       request.processedAt = new Date();
       await request.save();
 
-      // Thông báo cho user
+      console.log('✅ Request approved and saved');
+
+      // Thông báo cho user qua DM
       const user = interaction.client.users.cache.get(request.userId);
       if (user) {
-        const successEmbed = createWithdrawApproveEmbed(EmbedBuilder, request);
         try {
+          const successEmbed = createWithdrawApproveEmbed(EmbedBuilder, request);
           await user.send({ embeds: [successEmbed] });
-        } catch (error) {
-          console.log('Could not DM user about approval');
+          console.log('📧 Success DM sent to user');
+        } catch (dmError) {
+          console.log('❌ Could not DM user about approval:', dmError.message);
         }
       }
 
@@ -1000,38 +1008,63 @@ async function handleWithdrawButtons(interaction) {
         components: [] 
       });
 
+      console.log('🔄 Admin notification message updated');
+
     } else if (operation === 'qr') {
       // Tạo QR code cho chuyển khoản
       const { createQREmbed } = await import('../utils/bankQR.js');
-      const qrEmbed = createQREmbed(EmbedBuilder, request);
+      
+      const qrData = createQREmbed(EmbedBuilder, request);
+      
+      // Tạo Quick Transfer button
+      const quickTransferButton = new ActionRowBuilder()
+        .addComponents(
+          new ButtonBuilder()
+            .setLabel('📱 Quick Transfer')
+            .setStyle(ButtonStyle.Link)
+            .setURL(qrData.bankingLink)
+            .setEmoji('💳'),
+          new ButtonBuilder()
+            .setLabel('🔄 Refresh QR')
+            .setStyle(ButtonStyle.Secondary)
+            .setCustomId(`withdraw_qr_${request._id}`)
+            .setEmoji('🔄')
+        );
       
       await interaction.reply({ 
-        embeds: [qrEmbed], 
+        embeds: [qrData.embed],
+        components: [quickTransferButton],
         ephemeral: true 
       });
 
     } else if (operation === 'reject') {
+      console.log('❌ Admin rejecting withdraw request:', requestId);
+      
       // Từ chối yêu cầu
       request.status = 'rejected';
       request.adminId = interaction.user.id;
       request.processedAt = new Date();
       await request.save();
 
+      console.log('❌ Request rejected and saved');
+
       // Hoàn xu cho user
       const user = await User.findOne({ discordId: request.userId });
       if (user) {
         user.balance += request.amount; // Hoàn lại toàn bộ xu
         await user.save();
+        console.log('💰 Refunded xu to user:', request.amount);
       }
 
-      // Thông báo cho user
+      // Thông báo cho user qua DM
       const userObj = interaction.client.users.cache.get(request.userId);
       if (userObj) {
-        const rejectEmbed = createWithdrawRejectEmbed(EmbedBuilder, request);
         try {
+          const rejectEmbed = createWithdrawRejectEmbed(EmbedBuilder, request);
           await userObj.send({ embeds: [rejectEmbed] });
-        } catch (error) {
-          console.log('Could not DM user about rejection');
+          console.log('📧 Rejection DM sent to user');
+        } catch (dmError) {
+          console.log('❌ Could not DM user about rejection:', dmError.message);
         }
       }
 
@@ -1046,6 +1079,8 @@ async function handleWithdrawButtons(interaction) {
         embeds: [updatedEmbed], 
         components: [] 
       });
+
+      console.log('🔄 Admin notification message updated');
 
     } else if (operation === 'info') {
       // Hiển thị thông tin chi tiết
@@ -1073,9 +1108,12 @@ async function handleWithdrawButtons(interaction) {
     }
 
   } catch (error) {
-    console.error('Error handling withdraw button:', error);
+    console.error('❌ Error handling withdraw button:', error);
+    console.error('❌ Error details:', error.message);
+    console.error('❌ Error stack:', error.stack);
+    
     await interaction.reply({
-      content: '❌ Có lỗi xảy ra khi xử lý yêu cầu!',
+      content: `❌ **Có lỗi xảy ra khi xử lý yêu cầu!**\n\`\`\`${error.message}\`\`\``,
       ephemeral: true
     });
   }
