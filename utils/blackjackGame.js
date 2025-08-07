@@ -256,7 +256,7 @@ class BlackjackGame {
         resultMessage = '🎉 Dealer bị bust! Bạn thắng!';
         break;
       case 'push':
-        winAmount = 0;
+        winAmount = this.betAmount; // Hoàn lại tiền cược gốc khi hòa
         resultMessage = '🤝 Hòa! Hoàn tiền cược';
         break;
       case 'playerBust':
@@ -268,27 +268,50 @@ class BlackjackGame {
 
     // Cập nhật database
     try {
+      let balanceChange = 0;
+      let winningsChange = 0;
+      
+      if (this.gameState === 'push') {
+        // Khi hòa: hoàn lại tiền cược, winnings không đổi
+        balanceChange = this.betAmount; // Hoàn tiền cược
+        winningsChange = 0; // Không tính là thắng hay thua
+      } else if (winAmount > 0) {
+        // Thắng: nhận tiền thưởng
+        balanceChange = winAmount;
+        winningsChange = winAmount - this.betAmount; // Lời thực tế
+      } else {
+        // Thua: không hoàn gì cả
+        balanceChange = 0;
+        winningsChange = winAmount; // Số âm (lỗ)
+      }
+      
       const updatedUser = await User.findOneAndUpdate(
         { discordId: this.userId },
         { 
           $inc: { 
-            balance: winAmount,
+            balance: balanceChange,
             'stats.blackjackGames': 1,
-            'stats.blackjackWinnings': winAmount
+            'stats.blackjackWinnings': winningsChange
           }
         },
         { upsert: true, new: true }
       );
       
       // Log money transaction
-      if (winAmount > 0) {
-        await logMoneyReceived(updatedUser, winAmount, 'blackjack-win', {
+      if (this.gameState === 'push') {
+        // Không log gì cho trường hợp hòa vì không có thay đổi balance thực tế
+        console.log(`🤝 Blackjack game tied - money returned to user ${this.userId}`);
+      } else if (balanceChange > this.betAmount) {
+        // Player thắng - log số tiền thắng thực tế (không bao gồm tiền cược gốc)
+        const actualWin = balanceChange - this.betAmount;
+        await logMoneyReceived(updatedUser, actualWin, 'blackjack-win', {
           gameState: this.gameState,
-          betAmount: this.betAmount
+          betAmount: this.betAmount,
+          totalReceived: balanceChange
         });
-      } else if (winAmount < 0) {
-        // Note: winAmount is already negative for losses, so we pass positive amount
-        await logMoneyDeducted(updatedUser, Math.abs(winAmount), 'blackjack-loss', {
+      } else if (this.gameState === 'playerBust' || this.gameState === 'dealerWin') {
+        // Player thua - log số tiền mất (tiền cược đã bị trừ lúc bắt đầu)
+        await logMoneyDeducted(updatedUser, this.betAmount, 'blackjack-loss', {
           gameState: this.gameState,
           betAmount: this.betAmount
         });
