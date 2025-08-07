@@ -98,7 +98,7 @@ export function generateBankingLinks(bankInfo, amount, content) {
 }
 
 /**
- * Tạo embed và button cho QR code chuyển khoản
+ * Tạo embed và banking link cho QR code chuyển khoản
  * @param {import('discord.js').EmbedBuilder} EmbedBuilder
  * @param {Object} request - Withdraw request
  * @returns {Object} { embed, bankingLink }

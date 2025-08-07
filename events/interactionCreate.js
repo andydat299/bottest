@@ -1011,31 +1011,66 @@ async function handleWithdrawButtons(interaction) {
       console.log('🔄 Admin notification message updated');
 
     } else if (operation === 'qr') {
-      // Tạo QR code cho chuyển khoản
-      const { createQREmbed } = await import('../utils/bankQR.js');
-      
-      const qrData = createQREmbed(EmbedBuilder, request);
-      
-      // Tạo Quick Transfer button
-      const quickTransferButton = new ActionRowBuilder()
-        .addComponents(
-          new ButtonBuilder()
-            .setLabel('📱 Quick Transfer')
-            .setStyle(ButtonStyle.Link)
-            .setURL(qrData.bankingLink)
-            .setEmoji('💳'),
-          new ButtonBuilder()
-            .setLabel('🔄 Refresh QR')
-            .setStyle(ButtonStyle.Secondary)
-            .setCustomId(`withdraw_qr_${request._id}`)
-            .setEmoji('🔄')
-        );
-      
-      await interaction.reply({ 
-        embeds: [qrData.embed],
-        components: [quickTransferButton],
-        ephemeral: true 
-      });
+      try {
+        console.log('📱 Admin generating QR for request:', requestId);
+        
+        // Tạo QR code cho chuyển khoản
+        const { createQREmbed } = await import('../utils/bankQR.js');
+        console.log('✅ bankQR module imported');
+        
+        const qrData = createQREmbed(EmbedBuilder, request);
+        console.log('✅ QR data generated:', typeof qrData);
+        
+        // Tạo Quick Transfer button
+        const quickTransferButton = new ActionRowBuilder()
+          .addComponents(
+            new ButtonBuilder()
+              .setLabel('📱 Quick Transfer')
+              .setStyle(ButtonStyle.Link)
+              .setURL(qrData.bankingLink)
+              .setEmoji('💳'),
+            new ButtonBuilder()
+              .setLabel('🔄 Refresh QR')
+              .setStyle(ButtonStyle.Secondary)
+              .setCustomId(`withdraw_qr_${request._id}`)
+              .setEmoji('🔄')
+          );
+        
+        console.log('✅ Quick Transfer button created');
+        
+        await interaction.reply({ 
+          embeds: [qrData.embed],
+          components: [quickTransferButton],
+          ephemeral: true 
+        });
+        
+        console.log('✅ QR response sent to admin');
+        
+      } catch (qrError) {
+        console.error('❌ Error generating QR:', qrError);
+        console.error('❌ QR Error name:', qrError.name);
+        console.error('❌ QR Error message:', qrError.message);
+        
+        // Fallback: Gửi thông tin text đơn giản
+        const fallbackEmbed = new EmbedBuilder()
+          .setTitle('❌ QR Generation Failed')
+          .setDescription('**Lỗi khi tạo QR, đây là thông tin chuyển khoản:**')
+          .addFields(
+            { name: '🏦 Ngân hàng', value: request.bankName.toUpperCase(), inline: true },
+            { name: '🔢 Số tài khoản', value: `\`${request.accountNumber}\``, inline: true },
+            { name: '👤 Tên người nhận', value: request.accountHolder, inline: true },
+            { name: '💰 Số tiền', value: `**${request.vndAmount.toLocaleString()} VNĐ**`, inline: true },
+            { name: '📝 Nội dung CK', value: `\`Rut xu game - ID:${request._id.toString().slice(-8)}\``, inline: true },
+            { name: '🔧 Lỗi', value: `\`${qrError.message}\``, inline: false }
+          )
+          .setColor('#ff9900')
+          .setTimestamp();
+
+        await interaction.reply({ 
+          embeds: [fallbackEmbed], 
+          ephemeral: true 
+        });
+      }
 
     } else if (operation === 'reject') {
       console.log('❌ Admin rejecting withdraw request:', requestId);
