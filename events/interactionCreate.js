@@ -9,6 +9,7 @@ import {
   getBlackjackStats
 } from '../utils/blackjackGame.js';
 import { createGameEmbed, createGameButtons } from '../commands/xidach.js';
+import { handleEvalButtons } from '../commands/evalvm.js';
 import { 
   EmbedBuilder, 
   ActionRowBuilder, 
@@ -99,6 +100,12 @@ export default {
         // Xử lý reset user buttons
         if (interaction.customId.startsWith('reset_')) {
           const handled = await handleResetButton(interaction);
+          if (handled) return;
+        }
+
+        // Xử lý eval VM buttons
+        if (interaction.customId.startsWith('eval_')) {
+          const handled = await handleEvalButtons(interaction);
           if (handled) return;
         }
 

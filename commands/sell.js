@@ -10,6 +10,14 @@ export default {
   prefixEnabled: false, // Cho phép sử dụng với prefix
 
   async execute(interaction) {
+    // Lệnh sell đã bị tắt hoàn toàn
+    return interaction.reply({
+      content: '🚫 **Lệnh sell đã bị vô hiệu hóa hoàn toàn!**\n\n💡 *Tính năng bán cá đã được tắt bởi admin và không thể sử dụng.*\n\n🎣 *Hãy tiếp tục câu cá và tham gia các hoạt động khác!*',
+      ephemeral: true
+    });
+
+    /*
+    // Code cũ của sell command (đã bị vô hiệu hóa)
     // Kiểm tra lệnh có bị disable không
     if (isCommandDisabled('sell')) {
       return interaction.reply({
@@ -43,5 +51,5 @@ export default {
     await updateQuestProgress(interaction.user.id, 'earn', total);
 
     interaction.reply({ content: `💰 Bạn đã bán cá được **${total} xu**!` });
-  }
+    */
 };
