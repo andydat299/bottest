@@ -1,28 +1,24 @@
 # 📱 Quick Transfer Feature - Banking Deep Links
 
-## ✨ **Tính năng mới: Quick Transfer Button**
+## ✨ **Tính năng mới: Web Banking + Mobile Deep Links**
 
 Khi admin click "📱 Tạo QR", bot sẽ hiển thị:
 1. **QR Code** để quét bằng app banking
-2. **Quick Transfer Button** để mở trực tiếp app ngân hàng với thông tin đã fill sẵn
+2. **Web Banking Button** để mở website ngân hàng (Discord compatible)
+3. **Mobile Deep Link** để copy và mở app trực tiếp
+4. **Copy thông tin manual** cho backup
 
-## 🔗 **Banking Deep Links hỗ trợ:**
+## 🔗 **Hỗ trợ đa nền tảng:**
 
 ### **📱 Trên Mobile (Khuyến khích):**
-- **Vietcombank:** Mở app VCB Digibank
-- **Techcombank:** Mở app TCB Mobile Banking  
-- **BIDV:** Mở app BIDV Smart Banking
-- **VietinBank:** Mở app iPay Mobile
-- **Agribank:** Mở app Agribank E-Mobile Banking
-- **MBBank:** Mở app MBBank
-- **VPBank:** Mở app VPBank NEO
-- **ACB:** Mở app ACB ONE
-- **Sacombank:** Mở app Sacombank Pay
-- **TPBank:** Mở app TPBank Mobile
+- **QR Code:** Quét bằng camera app banking
+- **Deep Link:** Copy link mobile để mở app trực tiếp
+- **Web Banking:** Fallback nếu app không có
 
 ### **💻 Trên Desktop:**
-- Redirect đến Internet Banking website
-- User login và thực hiện chuyển khoản
+- **QR Code:** Hiển thị để scan bằng điện thoại
+- **Web Banking Button:** Mở internet banking website
+- **Manual Copy:** Copy thông tin để nhập tay
 
 ## 🎯 **Workflow hoàn chỉnh:**
 

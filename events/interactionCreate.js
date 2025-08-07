@@ -1021,11 +1021,11 @@ async function handleWithdrawButtons(interaction) {
         const qrData = createQREmbed(EmbedBuilder, request);
         console.log('✅ QR data generated:', typeof qrData);
         
-        // Tạo Quick Transfer button
+        // Tạo Web Banking button (Discord compatible)
         const quickTransferButton = new ActionRowBuilder()
           .addComponents(
             new ButtonBuilder()
-              .setLabel('📱 Quick Transfer')
+              .setLabel('🌐 Web Banking')
               .setStyle(ButtonStyle.Link)
               .setURL(qrData.bankingLink)
               .setEmoji('💳'),
