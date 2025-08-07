@@ -793,6 +793,7 @@ async function handleWithdrawModalSubmit(interaction) {
     await user.save();
 
     // Tạo buttons cho admin
+    const { ButtonBuilder, ButtonStyle, ActionRowBuilder } = await import('discord.js');
     const buttons = new ActionRowBuilder()
       .addComponents(
         new ButtonBuilder()
@@ -810,6 +811,13 @@ async function handleWithdrawModalSubmit(interaction) {
       );
 
     // Gửi thông báo đến admin channel
+    console.log('💰 Withdraw request created, attempting to send admin notification...');
+    console.log('📊 Request details:', {
+      id: withdrawRequest._id,
+      userId: request.userId,
+      amount: request.vndAmount
+    });
+    
     await sendAdminNotification(interaction.client, withdrawRequest, interaction.user, buttons);
 
     // Reply thành công
