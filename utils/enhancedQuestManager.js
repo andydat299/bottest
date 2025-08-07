@@ -170,62 +170,76 @@ export async function generateDailyQuests(userId) {
 }
 
 /**
- * Update quest progress
+ * Update quest progress - SAFE VERSION
  */
 export async function updateQuestProgress(userId, questType, amount = 1, metadata = {}) {
-  const user = await User.findOne({ discordId: userId });
-  if (!user || !user.quests) return [];
-
-  const completedQuests = [];
-  const now = new Date();
-
-  for (const quest of user.quests) {
-    if (quest.isCompleted || new Date(quest.expiresAt) < now || quest.type !== questType) {
-      continue;
+  try {
+    const user = await User.findOne({ discordId: userId });
+    if (!user || !user.quests) {
+      console.log(`No user or quests found for ${userId}`);
+      return [];
     }
 
-    // Special handling cho các quest types
-    let progressToAdd = amount;
+    const completedQuests = [];
+    const now = new Date();
 
-    switch (questType) {
-      case 'time_fishing':
-        const hour = new Date().getHours();
-        if (quest.templateId === 'fish_morning' && (hour < 6 || hour >= 12)) {
-          continue; // Not morning time
+    for (const quest of user.quests) {
+      if (quest.isCompleted || new Date(quest.expiresAt) < now || quest.type !== questType) {
+        continue;
+      }
+
+      // Special handling cho các quest types
+      let progressToAdd = amount;
+
+      try {
+        switch (questType) {
+          case 'time_fishing':
+            const hour = new Date().getHours();
+            if (quest.templateId === 'fish_morning' && (hour < 6 || hour >= 12)) {
+              continue; // Not morning time
+            }
+            break;
+            
+          case 'rare_fish':
+            if (metadata.rarity && !['rare', 'epic', 'legendary'].includes(metadata.rarity.toLowerCase())) {
+              continue;
+            }
+            break;
+            
+          case 'fish_value':
+            progressToAdd = metadata.value || amount;
+            break;
+            
+          case 'betting':
+            progressToAdd = metadata.betAmount || amount;
+            break;
+
+          default:
+            progressToAdd = amount;
         }
-        break;
-        
-      case 'rare_fish':
-        if (metadata.rarity && !['rare', 'epic', 'legendary'].includes(metadata.rarity.toLowerCase())) {
-          continue;
+
+        quest.progress += progressToAdd;
+
+        if (quest.progress >= quest.target) {
+          quest.isCompleted = true;
+          completedQuests.push(quest);
         }
-        break;
-        
-      case 'fish_value':
-        progressToAdd = metadata.value || amount;
-        break;
-        
-      case 'betting':
-        progressToAdd = metadata.betAmount || amount;
-        break;
-
-      default:
-        progressToAdd = amount;
+      } catch (questProcessError) {
+        console.log(`Error processing quest ${quest.id}:`, questProcessError.message);
+        continue; // Skip this quest but continue with others
+      }
     }
 
-    quest.progress += progressToAdd;
-
-    if (quest.progress >= quest.target) {
-      quest.isCompleted = true;
-      completedQuests.push(quest);
+    if (completedQuests.length > 0) {
+      await user.save();
     }
-  }
 
-  if (completedQuests.length > 0) {
-    await user.save();
+    return completedQuests;
+    
+  } catch (error) {
+    console.error('Safe quest update error:', error.message);
+    return []; // Return empty array on error to not break calling function
   }
-
-  return completedQuests;
 }
 
 /**
