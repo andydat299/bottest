@@ -36,6 +36,7 @@ import {
   clearUserCooldown,
   clearAllCooldowns
 } from '../utils/chatRewards.js';
+import { getGameSystemStats } from '../utils/blackjackGame.js';
 
 export default {
   data: new SlashCommandBuilder()
@@ -258,6 +259,14 @@ export default {
             .setDescription('Xem trạng thái hệ thống chat rewards')
         )
     )
+    .addSubcommandGroup(group =>
+      group.setName('games')
+        .setDescription('Quản lý hệ thống trò chơi')
+        .addSubcommand(subcommand =>
+          subcommand.setName('blackjack-stats')
+            .setDescription('Xem thống kê tổng quan blackjack')
+        )
+    )
     .addSubcommand(subcommand =>
       subcommand.setName('status')
         .setDescription('Xem trạng thái tổng quan tất cả hệ thống')
@@ -448,6 +457,25 @@ export default {
             .setTimestamp();
           
           await interaction.reply({ embeds: [statusEmbed] });
+        }
+      } else if (group === 'games') {
+        if (subcommand === 'blackjack-stats') {
+          const gameStats = getGameSystemStats();
+          
+          const statsEmbed = new EmbedBuilder()
+            .setTitle('🎴 Thống Kê Hệ Thống Blackjack')
+            .addFields(
+              { name: '🎮 Game đang chơi', value: `${gameStats.activeGames} game`, inline: true },
+              { name: '💰 Cược tối thiểu', value: `${gameStats.config.minBet.toLocaleString()} xu`, inline: true },
+              { name: '💎 Cược tối đa', value: `${gameStats.config.maxBet.toLocaleString()} xu`, inline: true },
+              { name: '🃏 Dealer dừng tại', value: `${gameStats.config.dealerStandOn} điểm`, inline: true },
+              { name: '🎯 Blackjack payout', value: `${gameStats.config.blackjackPayout}x`, inline: true },
+              { name: '🏆 Normal payout', value: `${gameStats.config.normalPayout}x`, inline: true }
+            )
+            .setColor('#ffdd57')
+            .setTimestamp();
+          
+          await interaction.reply({ embeds: [statsEmbed] });
         }
       } else if (subcommand === 'status') {
         await handleOverallStatus(interaction);
