@@ -985,14 +985,36 @@ async function handleWithdrawButtons(interaction) {
       console.log('✅ Request approved and saved');
 
       // Thông báo cho user qua DM
-      const user = interaction.client.users.cache.get(request.userId);
-      if (user) {
-        try {
+      try {
+        const user = interaction.client.users.cache.get(request.userId);
+        console.log('🔍 Looking for user:', request.userId, 'Found:', !!user);
+        
+        if (user) {
           const successEmbed = createWithdrawApproveEmbed(EmbedBuilder, request);
           await user.send({ embeds: [successEmbed] });
-          console.log('📧 Success DM sent to user');
-        } catch (dmError) {
-          console.log('❌ Could not DM user about approval:', dmError.message);
+          console.log('📧 ✅ Success DM sent to user:', user.username);
+        } else {
+          console.log('❌ User not found in cache, trying to fetch...');
+          const fetchedUser = await interaction.client.users.fetch(request.userId);
+          if (fetchedUser) {
+            const successEmbed = createWithdrawApproveEmbed(EmbedBuilder, request);
+            await fetchedUser.send({ embeds: [successEmbed] });
+            console.log('📧 ✅ Success DM sent to fetched user:', fetchedUser.username);
+          } else {
+            console.log('❌ Could not fetch user:', request.userId);
+          }
+        }
+      } catch (dmError) {
+        console.error('❌ Could not send DM to user:', dmError.message);
+        console.error('❌ DM Error details:', dmError);
+        
+        // Thử gửi thông báo vào channel chính nếu DM fail
+        try {
+          const mainChannel = interaction.channel;
+          await mainChannel.send(`🎉 <@${request.userId}> **Yêu cầu rút tiền của bạn đã được duyệt!**\n💰 **${request.vndAmount.toLocaleString()} VNĐ** đã được chuyển vào tài khoản **${request.bankName.toUpperCase()}** của bạn.\n🆔 Mã GD: \`${request._id.toString().slice(-8)}\``);
+          console.log('📢 Sent fallback notification to channel');
+        } catch (channelError) {
+          console.error('❌ Could not send channel notification:', channelError.message);
         }
       }
 
@@ -1088,18 +1110,40 @@ async function handleWithdrawButtons(interaction) {
       if (user) {
         user.balance += request.amount; // Hoàn lại toàn bộ xu
         await user.save();
-        console.log('💰 Refunded xu to user:', request.amount);
+        console.log('💰 Refunded xu to user:', request.amount, 'New balance:', user.balance);
       }
 
       // Thông báo cho user qua DM
-      const userObj = interaction.client.users.cache.get(request.userId);
-      if (userObj) {
-        try {
+      try {
+        const userObj = interaction.client.users.cache.get(request.userId);
+        console.log('🔍 Looking for user to reject notify:', request.userId, 'Found:', !!userObj);
+        
+        if (userObj) {
           const rejectEmbed = createWithdrawRejectEmbed(EmbedBuilder, request);
           await userObj.send({ embeds: [rejectEmbed] });
-          console.log('📧 Rejection DM sent to user');
-        } catch (dmError) {
-          console.log('❌ Could not DM user about rejection:', dmError.message);
+          console.log('📧 ❌ Rejection DM sent to user:', userObj.username);
+        } else {
+          console.log('❌ User not found in cache, trying to fetch...');
+          const fetchedUser = await interaction.client.users.fetch(request.userId);
+          if (fetchedUser) {
+            const rejectEmbed = createWithdrawRejectEmbed(EmbedBuilder, request);
+            await fetchedUser.send({ embeds: [rejectEmbed] });
+            console.log('📧 ❌ Rejection DM sent to fetched user:', fetchedUser.username);
+          } else {
+            console.log('❌ Could not fetch user:', request.userId);
+          }
+        }
+      } catch (dmError) {
+        console.error('❌ Could not send rejection DM to user:', dmError.message);
+        console.error('❌ Rejection DM Error details:', dmError);
+        
+        // Thử gửi thông báo vào channel chính nếu DM fail
+        try {
+          const mainChannel = interaction.channel;
+          await mainChannel.send(`❌ <@${request.userId}> **Yêu cầu rút tiền của bạn đã bị từ chối.**\n💰 **${request.amount.toLocaleString()} xu** đã được hoàn lại vào tài khoản.\n🆔 Mã GD: \`${request._id.toString().slice(-8)}\`\n💡 Liên hệ admin để biết thêm chi tiết.`);
+          console.log('📢 Sent fallback rejection notification to channel');
+        } catch (channelError) {
+          console.error('❌ Could not send channel rejection notification:', channelError.message);
         }
       }
 
