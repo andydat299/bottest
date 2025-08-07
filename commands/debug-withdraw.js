@@ -19,16 +19,16 @@ export default {
 
     const debugEmbed = new EmbedBuilder()
       .setTitle('🔧 Debug Withdraw System')
-      .setDescription('**Thông tin cấu hình hệ thống withdraw**')
+      .setDescription('**Thông tin cấu hình hệ thống withdraw (Railway)**')
       .addFields(
         {
-          name: '📋 Environment Variables',
+          name: '� Railway Environment Variables',
           value: `**ADMIN_CHANNEL_ID:** ${debugInfo.adminChannelId || '❌ Chưa cấu hình'}\n**ADMIN_ROLE_ID:** ${debugInfo.adminRoleId || '❌ Chưa cấu hình'}`,
           inline: false
         },
         {
           name: '✅ Trạng thái',
-          value: debugInfo.configured ? '✅ Đã cấu hình' : '❌ Chưa cấu hình',
+          value: debugInfo.configured ? '✅ Đã cấu hình trên Railway' : '❌ Chưa cấu hình',
           inline: true
         },
         {
@@ -37,6 +37,11 @@ export default {
             (interaction.client.channels.cache.get(debugInfo.adminChannelId) ? '✅ Channel tìm thấy' : '❌ Channel không tồn tại') : 
             '❌ Chưa cấu hình',
           inline: true
+        },
+        {
+          name: '🌐 Platform',
+          value: '🚀 **Railway Deployment**\nVariables được load từ Railway Dashboard',
+          inline: false
         }
       )
       .setColor(debugInfo.configured ? '#00ff00' : '#ff0000')
@@ -44,8 +49,14 @@ export default {
 
     if (!debugInfo.configured) {
       debugEmbed.addFields({
-        name: '💡 Hướng dẫn khắc phục',
-        value: '1. Tạo channel admin trong server\n2. Copy channel ID\n3. Thêm `ADMIN_CHANNEL_ID=your_channel_id` vào file .env\n4. Restart bot',
+        name: '� Railway Troubleshooting Steps',
+        value: '**1.** Kiểm tra Railway Dashboard → Service → Variables\n**2.** Verify tên variables: `ADMIN_CHANNEL_ID`, `ADMIN_ROLE_ID`\n**3.** Click "Redeploy" để restart service\n**4.** Đợi 1-2 phút để deployment hoàn thành\n**5.** Chạy lại `/debug-withdraw`',
+        inline: false
+      });
+      
+      debugEmbed.addFields({
+        name: '📋 Required Variables',
+        value: '```\nADMIN_CHANNEL_ID=1234567890123456789\nADMIN_ROLE_ID=9876543210987654321\n```',
         inline: false
       });
     }
