@@ -6,11 +6,12 @@ import { logMoneySpent, logMoneyReceived, logMoneyDeducted } from './logger.js';
 
 // Cấu hình game
 const GAME_CONFIG = {
-  minBet: 100,
-  maxBet: 50000,
+  minBet: 1,
+  maxBet: 1000,
   dealerStandOn: 17,
-  blackjackPayout: 1.5, // 3:2 payout
-  normalPayout: 0.95     // 1:1 payout
+  blackjackPayout: 1.8, // 1.8x payout cho blackjack
+  normalPayout: 1.8,    // 1.8x payout cho thắng thường
+  playerWinRate: 0.3    // 30% tỷ lệ thắng cho người chơi (70% thua)
 };
 
 // Card values và suits
@@ -176,18 +177,39 @@ class BlackjackGame {
       this.dealerHand.addCard(this.deck.draw());
     }
 
-    // Xác định người thắng
+    // Xác định người thắng với tỷ lệ điều chỉnh
     const playerValue = this.playerHand.getValue();
     const dealerValue = this.dealerHand.getValue();
-
+    
+    // Random để quyết định kết quả theo tỷ lệ 30% thắng, 70% thua
+    const randomOutcome = Math.random();
+    
     if (this.dealerHand.isBust()) {
-      this.gameState = 'dealerBust';
-    } else if (playerValue > dealerValue) {
-      this.gameState = 'playerWin';
-    } else if (dealerValue > playerValue) {
-      this.gameState = 'dealerWin';
+      // Nếu dealer bust, player có thể thắng (tùy theo tỷ lệ)
+      if (randomOutcome <= GAME_CONFIG.playerWinRate) {
+        this.gameState = 'dealerBust';
+      } else {
+        // Điều chỉnh: cho dealer thêm bài để không bust
+        this.dealerHand.cards[this.dealerHand.cards.length - 1] = {
+          suit: '♠️',
+          rank: '5',
+          getValue: () => 5
+        };
+        this.gameState = 'dealerWin';
+      }
     } else {
-      this.gameState = 'push';
+      // Logic với tỷ lệ điều chỉnh
+      if (randomOutcome <= GAME_CONFIG.playerWinRate) {
+        // Player được phép thắng (30%)
+        if (playerValue >= dealerValue) {
+          this.gameState = playerValue > dealerValue ? 'playerWin' : 'push';
+        } else {
+          this.gameState = 'playerWin'; // Boost cho player
+        }
+      } else {
+        // Player thua (70% tỷ lệ)
+        this.gameState = 'dealerWin';
+      }
     }
 
     this.isFinished = true;

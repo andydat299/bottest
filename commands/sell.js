@@ -36,7 +36,7 @@ export default {
 
     // Log money received from selling fish
     await logMoneyReceived(interaction.user, total, 'sell-fish', {
-      fishCount: user.fish.size
+      fishCount: [...user.fish.values()].reduce((sum, count) => sum + count, 0)
     });
 
     // Cập nhật quest earn money

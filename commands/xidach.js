@@ -92,12 +92,12 @@ async function handleRulesCommand(interaction) {
       },
       {
         name: '💰 Tỷ lệ thưởng',
-        value: '• **Blackjack**: 1.5x tiền cược (3:2)\n• **Thắng thường**: 1x tiền cược (1:1)\n• **Hòa**: Hoàn tiền cược\n• **Thua**: Mất tiền cược',
+        value: '• **Blackjack**: 1.8x tiền cược\n• **Thắng thường**: 1.8x tiền cược\n• **Hòa**: Hoàn tiền cược\n• **Thua**: Mất tiền cược',
         inline: false
       },
       {
         name: '⚙️ Cấu hình',
-        value: '• Cược tối thiểu: **100 xu**\n• Cược tối đa: **50,000 xu**\n• Số bộ bài: **1 bộ** (tự động xáo lại khi hết)',
+        value: '• Cược tối thiểu: **1 xu**\n• Cược tối đa: **1,000 xu**\n• Tỷ lệ thắng: **30%** (khó thắng)\n• Số bộ bài: **1 bộ** (tự động xáo lại)',
         inline: false
       }
     )
