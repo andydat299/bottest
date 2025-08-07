@@ -82,6 +82,14 @@ export async function handleQuestButtons(interaction) {
         );
       }
 
+      // Test button
+      buttons.addComponents(
+        new ButtonBuilder()
+          .setCustomId('quest_test_progress')
+          .setLabel('🧪 Test')
+          .setStyle(ButtonStyle.Danger)
+      );
+
       await interaction.update({ 
         embeds: [embed], 
         components: [buttons] 
@@ -174,6 +182,64 @@ export async function handleQuestButtons(interaction) {
       }
     }
 
+    } else if (interaction.customId === 'quest_test_progress') {
+      // Test quest progress with random activity
+      await interaction.deferUpdate();
+      
+      try {
+        const { updateQuestProgress } = await import('./enhancedQuestManager.js');
+        
+        // Random test activities
+        const testActivities = [
+          { type: 'fish', amount: Math.floor(Math.random() * 3) + 1, desc: 'fishing' },
+          { type: 'chat_messages', amount: Math.floor(Math.random() * 5) + 1, desc: 'chatting' },
+          { type: 'blackjack_wins', amount: 1, desc: 'winning blackjack' },
+          { type: 'wheel_spins', amount: Math.floor(Math.random() * 2) + 1, desc: 'spinning wheel' },
+          { type: 'rare_fish', amount: 1, desc: 'catching rare fish', metadata: { rarity: 'rare' } }
+        ];
+        
+        const randomActivity = testActivities[Math.floor(Math.random() * testActivities.length)];
+        
+        const completedQuests = await updateQuestProgress(
+          interaction.user.id, 
+          randomActivity.type, 
+          randomActivity.amount, 
+          randomActivity.metadata || {}
+        );
+        
+        let message = `🧪 **Test Activity**: ${randomActivity.desc} (+${randomActivity.amount})\n`;
+        
+        if (completedQuests.length > 0) {
+          message += `\n🎉 **Quest completed:**\n`;
+          completedQuests.forEach(quest => {
+            message += `• **${quest.name}** - ${quest.reward} xu ready to claim!\n`;
+          });
+        } else {
+          message += `\n📊 Progress updated (no quests completed)`;
+        }
+        
+        await interaction.followUp({
+          content: message,
+          ephemeral: true
+        });
+        
+        // Auto refresh after 1s
+        setTimeout(async () => {
+          try {
+            await refreshQuestDisplay(interaction);
+          } catch (error) {
+            console.error('Error auto-refreshing after test:', error);
+          }
+        }, 1000);
+        
+      } catch (error) {
+        await interaction.followUp({
+          content: `❌ **Test error:**\n\`${error.message}\``,
+          ephemeral: true
+        });
+      }
+    }
+
   } catch (error) {
     console.error('Error handling quest button:', error);
     if (!interaction.replied && !interaction.deferred) {
@@ -258,6 +324,14 @@ async function refreshQuestDisplay(interaction) {
         .setStyle(ButtonStyle.Primary)
     );
   }
+
+  // Test button
+  buttons.addComponents(
+    new ButtonBuilder()
+      .setCustomId('quest_test_progress')
+      .setLabel('🧪 Test')
+      .setStyle(ButtonStyle.Danger)
+  );
 
   await interaction.editReply({ 
     embeds: [embed], 

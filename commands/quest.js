@@ -100,6 +100,14 @@ export default {
         );
       }
 
+      // Test button để test quest progress
+      buttons.addComponents(
+        new ButtonBuilder()
+          .setCustomId('quest_test_progress')
+          .setLabel('🧪 Test Progress')
+          .setStyle(ButtonStyle.Danger)
+      );
+
       await interaction.reply({ 
         embeds: [embed], 
         components: [buttons], 

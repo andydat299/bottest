@@ -807,7 +807,7 @@ async function handleQuestButtons(interaction) {
 
       } catch (error) {
         await interaction.followUp({
-          content: `❌ **Lỗi tạo quest:**\n\`${error.message}\`",
+          content: `❌ **Lỗi tạo quest:**\n\`${error.message}\``,
           ephemeral: true
         });
       }
