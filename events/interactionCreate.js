@@ -10,7 +10,7 @@ import {
 } from '../utils/blackjackGame.js';
 import { createGameEmbed, createGameButtons } from '../commands/xidach.js';
 import { handleEvalButtons } from '../commands/evalvm.js';
-import { handleWheelBetModal } from '../commands/wheel.js';
+import { handleWheelBetModal, handleWheelGameButtons } from '../commands/wheel.js';
 import { 
   EmbedBuilder, 
   ActionRowBuilder, 
@@ -107,6 +107,12 @@ export default {
         // Xử lý eval VM buttons
         if (interaction.customId.startsWith('eval_')) {
           const handled = await handleEvalButtons(interaction);
+          if (handled) return;
+        }
+
+        // Xử lý wheel game buttons
+        if (interaction.customId.startsWith('wheel_')) {
+          const handled = await handleWheelGameButtons(interaction);
           if (handled) return;
         }
 

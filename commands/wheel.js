@@ -10,6 +10,7 @@ import {
 } from 'discord.js';
 import { User } from '../schemas/userSchema.js';
 import { logMoneyReceived, logMoneyDeducted } from '../utils/logger.js';
+import { isAdmin } from '../utils/adminUtils.js';
 
 // Cấu hình vòng quay
 const WHEEL_CONFIG = {
@@ -34,6 +35,10 @@ export default {
     .setName('wheel')
     .setDescription('🎡 Vòng quay may mắn - Thử vận may của bạn!')
     .addSubcommand(subcommand =>
+      subcommand.setName('post')
+        .setDescription('[ADMIN] Đăng bảng game vòng quay may mắn')
+    )
+    .addSubcommand(subcommand =>
       subcommand.setName('play')
         .setDescription('Chơi vòng quay may mắn')
         .addIntegerOption(option =>
@@ -57,6 +62,9 @@ export default {
     const subcommand = interaction.options.getSubcommand();
 
     switch (subcommand) {
+      case 'post':
+        await handlePostCommand(interaction);
+        break;
       case 'play':
         await handlePlayCommand(interaction);
         break;
@@ -69,6 +77,25 @@ export default {
     }
   }
 };
+
+async function handlePostCommand(interaction) {
+  // Kiểm tra quyền admin
+  if (!isAdmin(interaction.user.id)) {
+    return interaction.reply({
+      content: '❌ Chỉ admin mới có thể đăng bảng game!',
+      ephemeral: true
+    });
+  }
+
+  // Tạo embed game board
+  const gameEmbed = createWheelGameBoard();
+  const gameButtons = createWheelGameButtons();
+
+  await interaction.reply({ 
+    embeds: [gameEmbed], 
+    components: [gameButtons] 
+  });
+}
 
 async function handlePlayCommand(interaction) {
   // Kiểm tra user có game đang chơi không
@@ -85,12 +112,12 @@ async function handlePlayCommand(interaction) {
     // Chơi trực tiếp với số xu đã nhập
     await startWheelGame(interaction, betAmount);
   } else {
-    // Hiển thị modal để nhập số xu
-    await showBetModal(interaction);
+    // Hiển thị buttons để chọn số xu
+    await showBetButtons(interaction);
   }
 }
 
-async function showBetModal(interaction) {
+async function showBetButtons(interaction) {
   const user = await User.findOne({ discordId: interaction.user.id });
   const userBalance = user?.balance || 0;
 
@@ -111,6 +138,52 @@ async function showBetModal(interaction) {
   modal.addComponents(firstActionRow);
 
   await interaction.showModal(modal);
+}
+
+function createWheelGameBoard() {
+  const embed = new EmbedBuilder()
+    .setTitle('🎡 VÒNG QUAY MAY MẮN')
+    .setDescription(
+      `🎰 **Chào mừng đến với Wheel of Fortune!**\n\n` +
+      `🎯 **Cách chơi:**\n` +
+      `• Nhấn nút **🎡 CHƠI NGAY** để tham gia\n` +
+      `• Nhập số xu cược (${WHEEL_CONFIG.minBet}-${WHEEL_CONFIG.maxBet} xu)\n` +
+      `• Vòng quay sẽ quyết định số phận của bạn!\n\n` +
+      `🎊 **7 ô may mắn:**\n` +
+      WHEEL_CONFIG.sectors.map(s => 
+        `${s.emoji} **${s.name}** - x${s.multiplier} (${s.chance}%)`
+      ).join('\n') +
+      `\n\n💡 **Mẹo:** Jackpot hiếm nhưng thưởng x10! Chúc may mắn! 🍀`
+    )
+    .setColor('#ffa500')
+    .setThumbnail('https://i.imgur.com/wheel-icon.png') // Optional wheel icon
+    .setFooter({ 
+      text: '🎡 Wheel of Fortune • Chơi có trách nhiệm',
+      iconURL: 'https://i.imgur.com/casino-icon.png' 
+    })
+    .setTimestamp();
+
+  return embed;
+}
+
+function createWheelGameButtons() {
+  const row1 = new ActionRowBuilder()
+    .addComponents(
+      new ButtonBuilder()
+        .setCustomId('wheel_join')
+        .setLabel('🎡 CHƠI NGAY!')
+        .setStyle(ButtonStyle.Primary),
+      new ButtonBuilder()
+        .setCustomId('wheel_rules')
+        .setLabel('📋 Luật chơi')
+        .setStyle(ButtonStyle.Secondary),
+      new ButtonBuilder()
+        .setCustomId('wheel_stats')
+        .setLabel('📊 Thống kê')
+        .setStyle(ButtonStyle.Success)
+    );
+
+  return row1;
 }
 
 async function startWheelGame(interaction, betAmount) {
@@ -402,7 +475,7 @@ async function handleStatsCommand(interaction) {
   await interaction.reply({ embeds: [embed] });
 }
 
-// Export functions để xử lý modal
+// Export functions để xử lý modal và buttons
 export async function handleWheelBetModal(interaction) {
   const betAmount = parseInt(interaction.fields.getTextInputValue('bet_amount'));
   
@@ -415,6 +488,120 @@ export async function handleWheelBetModal(interaction) {
     return interaction.reply({ embeds: [embed], ephemeral: true });
   }
 
-  await interaction.deferReply();
+  await interaction.deferReply({ ephemeral: true });
   await startWheelGame(interaction, betAmount);
+}
+
+export async function handleWheelGameButtons(interaction) {
+  if (!interaction.customId.startsWith('wheel_')) return false;
+
+  const action = interaction.customId.replace('wheel_', '');
+  
+  switch (action) {
+    case 'join':
+      await handleJoinGame(interaction);
+      break;
+    case 'rules':
+      await handleRulesFromButton(interaction);
+      break;
+    case 'stats':
+      await handleStatsFromButton(interaction);
+      break;
+    default:
+      return false;
+  }
+  
+  return true;
+}
+
+async function handleJoinGame(interaction) {
+  // Kiểm tra user có game đang chơi không
+  if (activeGames.has(interaction.user.id)) {
+    return interaction.reply({
+      content: '🎡 Bạn đang có vòng quay chưa hoàn thành! Hãy hoàn thành game hiện tại trước.',
+      ephemeral: true
+    });
+  }
+
+  // Hiển thị modal để nhập cược
+  const user = await User.findOne({ discordId: interaction.user.id });
+  const userBalance = user?.balance || 0;
+
+  const modal = new ModalBuilder()
+    .setCustomId('wheel_bet_modal')
+    .setTitle('🎡 Vòng quay may mắn');
+
+  const betInput = new TextInputBuilder()
+    .setCustomId('bet_amount')
+    .setLabel('Nhập số xu muốn cược:')
+    .setStyle(TextInputStyle.Short)
+    .setPlaceholder(`${WHEEL_CONFIG.minBet}-${WHEEL_CONFIG.maxBet} xu (Bạn có: ${userBalance.toLocaleString()} xu)`)
+    .setRequired(true)
+    .setMinLength(1)
+    .setMaxLength(4);
+
+  const firstActionRow = new ActionRowBuilder().addComponents(betInput);
+  modal.addComponents(firstActionRow);
+
+  await interaction.showModal(modal);
+}
+
+async function handleRulesFromButton(interaction) {
+  const embed = new EmbedBuilder()
+    .setTitle('📋 Luật chơi Vòng quay may mắn')
+    .setDescription(
+      `🎯 **Cách chơi:**\n` +
+      `1. Nhấn **🎡 CHƠI NGAY** để tham gia\n` +
+      `2. Nhập số xu cược (${WHEEL_CONFIG.minBet}-${WHEEL_CONFIG.maxBet} xu)\n` +
+      `3. Vòng quay sẽ xoay trong 3 giây\n` +
+      `4. Nhận xu theo ô mà vòng quay dừng lại\n\n` +
+      `🎰 **Các ô trong vòng quay:**\n` +
+      WHEEL_CONFIG.sectors.map(s => 
+        `${s.emoji} **${s.name}** - Nhận x${s.multiplier} tiền cược (${s.chance}% cơ hội)`
+      ).join('\n') +
+      `\n\n💡 **Lưu ý:**\n` +
+      `• Chỉ có thể chơi 1 game tại 1 thời điểm\n` +
+      `• Game sẽ tự hủy sau 60 giây nếu không hoàn thành\n` +
+      `• Chơi có trách nhiệm và tận hưởng niềm vui! 🎊`
+    )
+    .setColor('#3498db')
+    .setFooter({ text: 'Wheel of Fortune Rules' });
+
+  await interaction.reply({ embeds: [embed], ephemeral: true });
+}
+
+async function handleStatsFromButton(interaction) {
+  const user = await User.findOne({ discordId: interaction.user.id });
+  
+  if (!user || !user.stats.wheelGames) {
+    const embed = new EmbedBuilder()
+      .setTitle('📊 Thống kê Vòng quay của bạn')
+      .setDescription('🎡 Bạn chưa chơi vòng quay lần nào!\n\nHãy nhấn **🎡 CHƠI NGAY** để bắt đầu!')
+      .setColor('#888888');
+    
+    return interaction.reply({ embeds: [embed], ephemeral: true });
+  }
+
+  const totalBet = user.stats.wheelGames * 100; // Ước tính trung bình
+  const winRate = user.stats.wheelGames > 0 ? 
+    ((user.stats.wheelWinnings > 0 ? 1 : 0) * 100 / user.stats.wheelGames).toFixed(1) : 0;
+
+  const embed = new EmbedBuilder()
+    .setTitle('📊 Thống kê Vòng quay của bạn')
+    .setColor(user.stats.wheelWinnings >= 0 ? '#00ff00' : '#ff0000')
+    .addFields(
+      { name: '🎡 Lượt chơi', value: user.stats.wheelGames.toLocaleString(), inline: true },
+      { name: '💰 Tổng lời/lỗ', value: `${user.stats.wheelWinnings >= 0 ? '+' : ''}${user.stats.wheelWinnings.toLocaleString()} xu`, inline: true },
+      { name: '📈 Hiệu suất', value: `${winRate}%`, inline: true },
+      { name: '💎 Số dư hiện tại', value: `${user.balance.toLocaleString()} xu`, inline: true },
+      { name: '🎯 Trạng thái', value: user.stats.wheelWinnings >= 0 ? '🟢 Có lãi' : '🔴 Đang lỗ', inline: true },
+      { name: '🏆 Cấp độ', value: user.stats.wheelGames >= 100 ? '💎 Master' : user.stats.wheelGames >= 50 ? '🥇 Pro' : user.stats.wheelGames >= 20 ? '🥈 Experienced' : '🥉 Beginner', inline: true }
+    )
+    .setTimestamp()
+    .setFooter({ 
+      text: `${interaction.user.username} • Personal Wheel Stats`,
+      iconURL: interaction.user.displayAvatarURL() 
+    });
+
+  await interaction.reply({ embeds: [embed], ephemeral: true });
 }
