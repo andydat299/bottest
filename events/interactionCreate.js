@@ -116,6 +116,12 @@ export default {
           if (handled) return;
         }
 
+        // Xử lý bot info buttons
+        if (interaction.customId.startsWith('bot_')) {
+          await handleBotInfoButtons(interaction);
+          return;
+        }
+
         // Xử lý blackjack buttons
         if (interaction.customId.startsWith('blackjack_')) {
           await handleBlackjackButtons(interaction);
@@ -358,5 +364,220 @@ async function handleGameBoardButtons(interaction) {
 
       await interaction.reply({ embeds: [statsEmbed], ephemeral: true });
       break;
+  }
+}
+
+// Function xử lý bot info buttons
+async function handleBotInfoButtons(interaction) {
+  const action = interaction.customId.replace('bot_', '');
+  
+  switch (action) {
+    case 'help':
+      await showCommandsHelp(interaction);
+      break;
+    case 'stats':
+      await showServerStats(interaction);
+      break;
+    case 'games':
+      await showGamesInfo(interaction);
+      break;
+  }
+}
+
+async function showCommandsHelp(interaction) {
+  const embed = new EmbedBuilder()
+    .setTitle('📋 Danh sách Commands')
+    .setDescription('**Tất cả lệnh có sẵn trong bot:**')
+    .addFields(
+      {
+        name: '🎣 Fishing Commands',
+        value: 
+          '`/fish` - Câu cá để kiếm xu\n' +
+          '`/inventory` - Xem túi đồ\n' +
+          '`/upgrade` - Nâng cấp cần câu\n' +
+          '`/repair` - Sửa chữa cần câu\n' +
+          '`/rates` - Xem tỷ lệ câu cá',
+        inline: true
+      },
+      {
+        name: '🎮 Casino & Games',
+        value: 
+          '`/wheel post` - Game vòng quay (Admin)\n' +
+          '`/wheel play` - Chơi vòng quay\n' +
+          '`/xidach` - Blackjack game\n' +
+          '`/wheel stats` - Thống kê games',
+        inline: true
+      },
+      {
+        name: '👤 User Commands',
+        value: 
+          '`/profile` - Xem hồ sơ cá nhân\n' +
+          '`/stats` - Thống kê fishing\n' +
+          '`/quests` - Xem nhiệm vụ\n' +
+          '`/cooldown` - Kiểm tra thời gian chờ',
+        inline: true
+      },
+      {
+        name: '📊 Info Commands',
+        value: 
+          '`/help` - Hướng dẫn chi tiết\n' +
+          '`/list` - Danh sách tất cả cá\n' +
+          '`/leaderboard` - Bảng xếp hạng\n' +
+          '`/fishstats` - Thống kê cộng đồng',
+        inline: true
+      },
+      {
+        name: '💡 Tips',
+        value: 
+          '• Chat để nhận xu thưởng\n' +
+          '• Hoàn thành quests để kiếm thêm\n' +
+          '• Nâng cấp cần để câu cá hiếm\n' +
+          '• Chơi minigames để thử vận may',
+        inline: false
+      }
+    )
+    .setColor('#3498db')
+    .setFooter({ text: 'Sử dụng /help [command] để xem chi tiết từng lệnh' });
+
+  await interaction.reply({ embeds: [embed], ephemeral: true });
+}
+
+async function showServerStats(interaction) {
+  const guild = interaction.guild;
+  const client = interaction.client;
+  
+  // Đếm users trong database (cần import User schema)
+  let totalUsers = 0;
+  try {
+    totalUsers = await User.countDocuments();
+  } catch (error) {
+    console.log('Không thể đếm users trong DB');
+  }
+
+  const embed = new EmbedBuilder()
+    .setTitle(`📊 Thống kê Server: ${guild.name}`)
+    .setThumbnail(guild.iconURL({ dynamic: true }))
+    .addFields(
+      {
+        name: '👥 Thành viên',
+        value: 
+          `**Total:** ${guild.memberCount.toLocaleString()}\n` +
+          `**Online:** ${guild.members.cache.filter(m => m.presence?.status !== 'offline').size}\n` +
+          `**Bots:** ${guild.members.cache.filter(m => m.user.bot).size}`,
+        inline: true
+      },
+      {
+        name: '📺 Channels',
+        value: 
+          `**Text:** ${guild.channels.cache.filter(c => c.type === 0).size}\n` +
+          `**Voice:** ${guild.channels.cache.filter(c => c.type === 2).size}\n` +
+          `**Categories:** ${guild.channels.cache.filter(c => c.type === 4).size}`,
+        inline: true
+      },
+      {
+        name: '🎮 Bot Stats',
+        value: 
+          `**Servers:** ${client.guilds.cache.size}\n` +
+          `**Users:** ${client.users.cache.size.toLocaleString()}\n` +
+          `**DB Users:** ${totalUsers.toLocaleString()}`,
+        inline: true
+      },
+      {
+        name: '📅 Server Info',
+        value: 
+          `**Created:** <t:${Math.floor(guild.createdTimestamp / 1000)}:R>\n` +
+          `**Owner:** <@${guild.ownerId}>\n` +
+          `**Boost Level:** ${guild.premiumTier}`,
+        inline: true
+      },
+      {
+        name: '⚡ Performance',
+        value: 
+          `**Uptime:** ${formatUptime(client.uptime)}\n` +
+          `**Ping:** ${client.ws.ping}ms\n` +
+          `**Memory:** ${(process.memoryUsage().heapUsed / 1024 / 1024).toFixed(2)}MB`,
+        inline: true
+      }
+    )
+    .setColor('#e74c3c')
+    .setFooter({ 
+      text: `Stats được cập nhật lúc`,
+      iconURL: client.user.displayAvatarURL() 
+    })
+    .setTimestamp();
+
+  await interaction.reply({ embeds: [embed], ephemeral: true });
+}
+
+async function showGamesInfo(interaction) {
+  const embed = new EmbedBuilder()
+    .setTitle('🎮 Games & Minigames')
+    .setDescription('**Khám phá các trò chơi thú vị trong bot!**')
+    .addFields(
+      {
+        name: '🎣 Fishing System',
+        value: 
+          '• Câu cá để kiếm xu và sưu tập\n' +
+          '• 20+ loại cá với độ hiếm khác nhau\n' +
+          '• Nâng cấp cần câu để tăng tỷ lệ\n' +
+          '• Hệ thống nhiệm vụ đa dạng',
+        inline: false
+      },
+      {
+        name: '🎴 Blackjack (Xì Dách)',
+        value: 
+          '• Casino game kinh điển\n' +
+          '• Cược 1-1000 xu, thắng x1.8\n' +
+          '• AI dealer thông minh\n' +
+          '• Thống kê chi tiết',
+        inline: true
+      },
+      {
+        name: '🎡 Wheel of Fortune',
+        value: 
+          '• Vòng quay may mắn 7 ô\n' +
+          '• Jackpot x10 cực hiếm\n' +
+          '• Admin post game board\n' +
+          '• House edge cân bằng',
+        inline: true
+      },
+      {
+        name: '💬 Chat Rewards',
+        value: 
+          '• Nhận xu khi chat tích cực\n' +
+          '• Bonus streak cho hoạt động liên tục\n' +
+          '• Anti-spam protection\n' +
+          '• Daily bonus multiplier',
+        inline: false
+      },
+      {
+        name: '🎯 Cách bắt đầu',
+        value: 
+          '**Fishing:** `/fish` để câu cá đầu tiên\n' +
+          '**Blackjack:** `/xidach rules` xem luật chơi\n' +
+          '**Wheel:** Đợi admin post game board\n' +
+          '**Profile:** `/profile` xem tiến độ',
+        inline: false
+      }
+    )
+    .setColor('#f39c12')
+    .setFooter({ text: 'Chơi có trách nhiệm và tận hưởng!' });
+
+  await interaction.reply({ embeds: [embed], ephemeral: true });
+}
+
+// Helper function để format uptime (duplicate, có thể move ra utils)
+function formatUptime(ms) {
+  const seconds = Math.floor((ms / 1000) % 60);
+  const minutes = Math.floor((ms / (1000 * 60)) % 60);
+  const hours = Math.floor((ms / (1000 * 60 * 60)) % 24);
+  const days = Math.floor(ms / (1000 * 60 * 60 * 24));
+
+  if (days > 0) {
+    return `${days}d ${hours}h ${minutes}m`;
+  } else if (hours > 0) {
+    return `${hours}h ${minutes}m`;
+  } else {
+    return `${minutes}m ${seconds}s`;
   }
 }
