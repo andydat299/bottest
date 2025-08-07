@@ -52,4 +52,5 @@ export default {
 
     interaction.reply({ content: `💰 Bạn đã bán cá được **${total} xu**!` });
     */
+  }
 };
