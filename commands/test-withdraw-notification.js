@@ -1,98 +1,120 @@
-import { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } from 'discord.js';
+import { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits } from 'discord.js';
 
 export default {
   data: new SlashCommandBuilder()
     .setName('test-withdraw-notification')
-    .setDescription('🧪 [ADMIN] Test withdrawal notification system')
-    .addUserOption(option =>
-      option.setName('user')
-        .setDescription('User to notify')
-        .setRequired(true)
-    )
-    .addStringOption(option =>
-      option.setName('status')
-        .setDescription('Withdrawal status')
-        .addChoices(
-          { name: 'Approved', value: 'approved' },
-          { name: 'Rejected', value: 'rejected' },
-          { name: 'Processing', value: 'processing' }
-        )
-        .setRequired(true)
-    )
-    .addIntegerOption(option =>
-      option.setName('amount')
-        .setDescription('Withdrawal amount')
-        .setMinValue(1000)
-        .setMaxValue(1000000)
-        .setRequired(false)
-    )
+    .setDescription('🧪 [ADMIN] Test gửi withdraw notification đến admin channel')
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 
   async execute(interaction) {
+    if (!interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
+      return await interaction.reply({
+        content: '❌ Bạn không có quyền sử dụng lệnh này!',
+        ephemeral: true
+      });
+    }
+
+    const adminChannelId = process.env.ADMIN_CHANNEL_ID;
+    const adminRoleId = process.env.ADMIN_ROLE_ID;
+
+    if (!adminChannelId) {
+      return await interaction.reply({
+        content: '❌ ADMIN_CHANNEL_ID không được cấu hình!',
+        ephemeral: true
+      });
+    }
+
+    const adminChannel = interaction.client.channels.cache.get(adminChannelId);
+    if (!adminChannel) {
+      return await interaction.reply({
+        content: `❌ Không tìm thấy admin channel với ID: ${adminChannelId}`,
+        ephemeral: true
+      });
+    }
+
     try {
-      const user = interaction.options.getUser('user');
-      const status = interaction.options.getString('status');
-      const amount = interaction.options.getInteger('amount') || 50000;
-      
-      const statusConfig = {
-        approved: {
-          title: '✅ Withdrawal Approved',
-          description: 'Your withdrawal has been approved and processed!',
-          color: '#00ff00'
-        },
-        rejected: {
-          title: '❌ Withdrawal Rejected',
-          description: 'Your withdrawal request has been rejected.',
-          color: '#ff0000'
-        },
-        processing: {
-          title: '⏳ Withdrawal Processing',
-          description: 'Your withdrawal is currently being processed.',
-          color: '#ffdd57'
-        }
+      console.log('🧪 Starting test withdraw notification...');
+      console.log('📍 Admin Channel ID:', adminChannelId);
+      console.log('👑 Admin Role ID:', adminRoleId);
+      console.log('🔍 Admin Channel found:', !!adminChannel);
+      console.log('📝 Admin Channel name:', adminChannel.name);
+
+      // Tạo mock withdraw request
+      const mockRequest = {
+        _id: { toString: () => 'TEST12345678' },
+        userId: interaction.user.id,
+        username: interaction.user.username,
+        amount: 100000,
+        fee: 5000,
+        xuAfterFee: 95000,
+        vndAmount: 95000,
+        bankName: 'vietcombank',
+        accountNumber: '1234567890',
+        accountHolder: 'NGUYEN VAN TEST',
+        adminNote: 'Test withdraw notification',
+        status: 'pending',
+        createdAt: new Date()
       };
 
-      const config = statusConfig[status];
-      
-      // Create notification embed
-      const notificationEmbed = new EmbedBuilder()
-        .setTitle(config.title)
-        .setDescription(config.description)
-        .addFields(
-          { name: '💰 Amount', value: `${amount.toLocaleString()} xu`, inline: true },
-          { name: '📅 Date', value: new Date().toLocaleDateString(), inline: true },
-          { name: '🆔 Reference', value: `WD${Date.now()}`, inline: true }
-        )
-        .setColor(config.color)
-        .setFooter({ text: 'Withdrawal Notification System' })
-        .setTimestamp();
-
-      // Test embed for admin
+      // Tạo test embed
       const testEmbed = new EmbedBuilder()
-        .setTitle('🧪 WITHDRAWAL NOTIFICATION TEST')
-        .setDescription(`**Testing notification for ${user.username}:**`)
+        .setTitle('🧪 TEST WITHDRAW NOTIFICATION')
+        .setDescription('**Đây là test withdraw request để kiểm tra hệ thống**')
         .addFields(
-          { name: '📧 Recipient', value: user.toString(), inline: true },
-          { name: '📊 Status', value: status, inline: true },
-          { name: '💰 Amount', value: `${amount.toLocaleString()} xu`, inline: true }
+          { name: '👤 Người dùng', value: `<@${mockRequest.userId}>\n\`${mockRequest.username}\` (${mockRequest.userId})`, inline: false },
+          { name: '💰 Chi tiết giao dịch', value: `**Xu gốc:** ${mockRequest.amount.toLocaleString()} xu\n**Phí:** ${mockRequest.fee.toLocaleString()} xu (5%)\n**VNĐ chuyển:** **${mockRequest.vndAmount.toLocaleString()} VNĐ**`, inline: false },
+          { name: '🏦 Thông tin nhận tiền', value: `**Ngân hàng:** ${mockRequest.bankName}\n**Số TK:** \`${mockRequest.accountNumber}\`\n**Tên:** ${mockRequest.accountHolder}`, inline: false },
+          { name: '📝 Ghi chú', value: mockRequest.adminNote, inline: false },
+          { name: '🧪 Test Mode', value: 'Đây là test notification - KHÔNG CHUYỂN TIỀN THẬT', inline: false }
         )
-        .setColor('#3498db')
+        .setColor('#ffd700')
+        .setThumbnail(interaction.user.displayAvatarURL())
+        .setFooter({ text: `Test ID: ${mockRequest._id.toString()} • Test Mode` })
         .setTimestamp();
 
-      // Try to send DM notification
-      try {
-        await user.send({ embeds: [notificationEmbed] });
-        testEmbed.addFields({ name: '✅ Result', value: 'Notification sent successfully', inline: false });
-      } catch (dmError) {
-        testEmbed.addFields({ name: '❌ Result', value: 'Failed to send DM (user may have DMs disabled)', inline: false });
-      }
+      // Tạo test buttons
+      const testButtons = new ActionRowBuilder()
+        .addComponents(
+          new ButtonBuilder()
+            .setCustomId(`test_qr_${mockRequest._id.toString()}`)
+            .setLabel('📱 Test QR')
+            .setStyle(ButtonStyle.Primary),
+          new ButtonBuilder()
+            .setCustomId(`test_approve_${mockRequest._id.toString()}`)
+            .setLabel('✅ Test Duyệt')
+            .setStyle(ButtonStyle.Success),
+          new ButtonBuilder()
+            .setCustomId(`test_reject_${mockRequest._id.toString()}`)
+            .setLabel('❌ Test Từ chối')
+            .setStyle(ButtonStyle.Danger)
+        );
 
-      await interaction.reply({ embeds: [testEmbed], ephemeral: true });
+      // Gửi test notification
+      const mention = adminRoleId ? `<@&${adminRoleId}>` : '@Admin';
+      console.log('📤 Sending test notification...');
+      console.log('💬 Mention string:', mention);
+      
+      const sentMessage = await adminChannel.send({
+        content: `${mention} 🧪 **TEST WITHDRAW NOTIFICATION**`,
+        embeds: [testEmbed],
+        components: [testButtons]
+      });
+
+      console.log('✅ Test notification sent successfully!');
+      console.log('📨 Message ID:', sentMessage.id);
+
+      await interaction.reply({
+        content: `✅ **Test notification đã được gửi thành công!**\n📍 Kiểm tra channel: <#${adminChannelId}>\n📨 Message ID: \`${sentMessage.id}\``,
+        ephemeral: true
+      });
 
     } catch (error) {
-      console.error('Error in test-withdraw-notification:', error);
+      console.error('❌ Error sending test notification:', error);
+      console.error('❌ Error details:', error.message);
+      console.error('❌ Error stack:', error.stack);
+      
       await interaction.reply({
-        content: '❌ Error testing withdrawal notification.',
+        content: `❌ **Lỗi khi gửi test notification:**\n\`\`\`${error.message}\`\`\`\n\n💡 Kiểm tra console logs để biết thêm chi tiết.`,
         ephemeral: true
       });
     }

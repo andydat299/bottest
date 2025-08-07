@@ -3,82 +3,76 @@ import { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } from 'discord.
 export default {
   data: new SlashCommandBuilder()
     .setName('test-withdraw-embeds')
-    .setDescription('🧪 [ADMIN] Test withdrawal embed designs')
+    .setDescription('🧪 [ADMIN] Test approve/reject embeds cho withdraw')
+    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
     .addStringOption(option =>
       option.setName('type')
-        .setDescription('Embed type to test')
-        .addChoices(
-          { name: 'Success', value: 'success' },
-          { name: 'Pending', value: 'pending' },
-          { name: 'Failed', value: 'failed' },
-          { name: 'Insufficient Balance', value: 'insufficient' }
-        )
+        .setDescription('Test loại nào')
         .setRequired(true)
-    )
-    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
+        .addChoices(
+          { name: 'Approve Embed', value: 'approve' },
+          { name: 'Reject Embed', value: 'reject' },
+          { name: 'Both', value: 'both' }
+        )
+    ),
 
   async execute(interaction) {
+    if (!interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
+      return await interaction.reply({
+        content: '❌ Bạn không có quyền sử dụng lệnh này!',
+        ephemeral: true
+      });
+    }
+
+    const testType = interaction.options.getString('type');
+
     try {
-      const embedType = interaction.options.getString('type');
+      const { createWithdrawApproveEmbed, createWithdrawRejectEmbed } = await import('../utils/adminUtils.js');
       
-      const embeds = {
-        success: new EmbedBuilder()
-          .setTitle('✅ Withdrawal Successful!')
-          .setDescription('Your withdrawal has been processed successfully.')
-          .addFields(
-            { name: '💰 Amount', value: '50,000 xu', inline: true },
-            { name: '📱 Method', value: 'Mobile Banking', inline: true },
-            { name: '🆔 Transaction ID', value: 'TXN123456789', inline: true }
-          )
-          .setColor('#00ff00')
-          .setTimestamp(),
-          
-        pending: new EmbedBuilder()
-          .setTitle('⏳ Withdrawal Pending')
-          .setDescription('Your withdrawal is being processed. Please wait.')
-          .addFields(
-            { name: '💰 Amount', value: '25,000 xu', inline: true },
-            { name: '📱 Method', value: 'Bank Transfer', inline: true },
-            { name: '⏱️ Est. Time', value: '1-3 business days', inline: true }
-          )
-          .setColor('#ffdd57')
-          .setTimestamp(),
-          
-        failed: new EmbedBuilder()
-          .setTitle('❌ Withdrawal Failed')
-          .setDescription('Your withdrawal could not be processed.')
-          .addFields(
-            { name: '💰 Amount', value: '10,000 xu', inline: true },
-            { name: '🚫 Reason', value: 'Invalid account details', inline: true },
-            { name: '💡 Action', value: 'Please check your account info', inline: true }
-          )
-          .setColor('#ff0000')
-          .setTimestamp(),
-          
-        insufficient: new EmbedBuilder()
-          .setTitle('💸 Insufficient Balance')
-          .setDescription('You do not have enough xu for this withdrawal.')
-          .addFields(
-            { name: '💰 Requested', value: '100,000 xu', inline: true },
-            { name: '🏦 Available', value: '75,000 xu', inline: true },
-            { name: '❌ Shortfall', value: '25,000 xu', inline: true }
-          )
-          .setColor('#ff6b6b')
-          .setTimestamp()
+      // Mock request object for testing
+      const mockRequest = {
+        _id: { toString: () => 'TEST67890123' },
+        userId: interaction.user.id,
+        username: interaction.user.username,
+        amount: 100000,
+        fee: 5000,
+        xuAfterFee: 95000,
+        vndAmount: 95000,
+        bankName: 'vietcombank',
+        accountNumber: '1234567890',
+        accountHolder: 'NGUYEN VAN TEST',
+        adminNote: 'Test withdraw embed',
+        status: 'pending',
+        createdAt: new Date(),
+        processedAt: new Date()
       };
 
-      const selectedEmbed = embeds[embedType];
-      
-      await interaction.reply({ 
-        content: `🧪 **Testing ${embedType} withdrawal embed:**`,
-        embeds: [selectedEmbed], 
-        ephemeral: true 
+      const embeds = [];
+
+      if (testType === 'approve' || testType === 'both') {
+        console.log('🧪 Testing approve embed...');
+        const approveEmbed = createWithdrawApproveEmbed(EmbedBuilder, mockRequest);
+        embeds.push(approveEmbed);
+      }
+
+      if (testType === 'reject' || testType === 'both') {
+        console.log('🧪 Testing reject embed...');
+        const rejectEmbed = createWithdrawRejectEmbed(EmbedBuilder, mockRequest);
+        embeds.push(rejectEmbed);
+      }
+
+      await interaction.reply({
+        content: `🧪 **Test Withdraw ${testType.toUpperCase()} Embeds**\n\n**Đây là embeds sẽ được gửi cho user khi admin approve/reject:**`,
+        embeds: embeds,
+        ephemeral: true
       });
 
+      console.log('✅ Withdraw embeds test completed');
+
     } catch (error) {
-      console.error('Error in test-withdraw-embeds:', error);
+      console.error('❌ Error testing withdraw embeds:', error);
       await interaction.reply({
-        content: '❌ Error testing withdrawal embeds.',
+        content: `❌ **Lỗi khi test embeds:**\n\`\`\`${error.message}\`\`\``,
         ephemeral: true
       });
     }

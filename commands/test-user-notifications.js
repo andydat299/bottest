@@ -3,88 +3,110 @@ import { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } from 'discord.
 export default {
   data: new SlashCommandBuilder()
     .setName('test-user-notifications')
-    .setDescription('🧪 [ADMIN] Test user notification system')
+    .setDescription('🧪 [ADMIN] Test approve/reject notifications gửi cho user')
+    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
     .addUserOption(option =>
       option.setName('user')
-        .setDescription('User to send test notification to')
+        .setDescription('User để test notification')
         .setRequired(true)
     )
     .addStringOption(option =>
       option.setName('type')
-        .setDescription('Notification type')
-        .addChoices(
-          { name: 'Quest Complete', value: 'quest_complete' },
-          { name: 'Level Up', value: 'level_up' },
-          { name: 'Daily Bonus', value: 'daily_bonus' },
-          { name: 'Achievement', value: 'achievement' }
-        )
+        .setDescription('Loại notification')
         .setRequired(true)
-    )
-    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
+        .addChoices(
+          { name: 'Approve (Duyệt)', value: 'approve' },
+          { name: 'Reject (Từ chối)', value: 'reject' },
+          { name: 'Both (Cả hai)', value: 'both' }
+        )
+    ),
 
   async execute(interaction) {
+    if (!interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
+      return await interaction.reply({
+        content: '❌ Bạn không có quyền sử dụng lệnh này!',
+        ephemeral: true
+      });
+    }
+
+    const testUser = interaction.options.getUser('user');
+    const notificationType = interaction.options.getString('type');
+
     try {
-      const user = interaction.options.getUser('user');
-      const notificationType = interaction.options.getString('type');
+      const { createWithdrawApproveEmbed, createWithdrawRejectEmbed } = await import('../utils/adminUtils.js');
       
-      const notifications = {
-        quest_complete: {
-          title: '🎉 Quest Completed!',
-          description: 'You have completed a quest and earned rewards!',
-          color: '#00ff00'
-        },
-        level_up: {
-          title: '⭐ Level Up!',
-          description: 'Congratulations! You have leveled up!',
-          color: '#ffdd57'
-        },
-        daily_bonus: {
-          title: '🎁 Daily Bonus!',
-          description: 'You received your daily login bonus!',
-          color: '#3498db'
-        },
-        achievement: {
-          title: '🏆 Achievement Unlocked!',
-          description: 'You unlocked a new achievement!',
-          color: '#9b59b6'
-        }
+      // Mock request object for testing
+      const mockRequest = {
+        _id: { toString: () => `TEST${Date.now()}` },
+        userId: testUser.id,
+        username: testUser.username,
+        amount: 100000,
+        fee: 5000,
+        xuAfterFee: 95000,
+        vndAmount: 95000,
+        bankName: 'vietcombank',
+        accountNumber: '1234567890',
+        accountHolder: 'NGUYEN VAN TEST',
+        adminNote: 'Test notification from admin',
+        status: 'pending',
+        createdAt: new Date(),
+        processedAt: new Date()
       };
 
-      const notification = notifications[notificationType];
-      
-      const embed = new EmbedBuilder()
-        .setTitle('🧪 NOTIFICATION TEST')
-        .setDescription(`**Testing notification for ${user.username}:**`)
-        .addFields(
-          { name: '📧 Type', value: notificationType, inline: true },
-          { name: '📋 Title', value: notification.title, inline: true },
-          { name: '📝 Message', value: notification.description, inline: false },
-          { name: '🔧 Status', value: 'Test notification sent', inline: true }
-        )
-        .setColor(notification.color)
-        .setTimestamp();
+      console.log('🧪 Testing user notifications...');
+      console.log('👤 Target user:', testUser.username, testUser.id);
+      console.log('📧 Notification type:', notificationType);
 
-      // Try to DM the user with test notification
-      try {
-        const testEmbed = new EmbedBuilder()
-          .setTitle(notification.title)
-          .setDescription(notification.description)
-          .setColor(notification.color)
-          .setFooter({ text: 'This is a test notification from admin' })
-          .setTimestamp();
-          
-        await user.send({ embeds: [testEmbed] });
-        embed.addFields({ name: '✅ Result', value: 'DM sent successfully', inline: true });
-      } catch (dmError) {
-        embed.addFields({ name: '❌ Result', value: 'Failed to send DM (user may have DMs disabled)', inline: true });
+      let sentCount = 0;
+
+      if (notificationType === 'approve' || notificationType === 'both') {
+        try {
+          console.log('📤 Sending approve notification...');
+          const approveEmbed = createWithdrawApproveEmbed(EmbedBuilder, mockRequest);
+          await testUser.send({ 
+            content: '🧪 **TEST NOTIFICATION - APPROVE**\n*Đây là test notification từ admin*',
+            embeds: [approveEmbed] 
+          });
+          console.log('✅ Approve notification sent successfully');
+          sentCount++;
+        } catch (approveError) {
+          console.error('❌ Failed to send approve notification:', approveError.message);
+        }
       }
 
-      await interaction.reply({ embeds: [embed], ephemeral: true });
+      if (notificationType === 'reject' || notificationType === 'both') {
+        try {
+          console.log('📤 Sending reject notification...');
+          const rejectEmbed = createWithdrawRejectEmbed(EmbedBuilder, mockRequest);
+          await testUser.send({ 
+            content: '🧪 **TEST NOTIFICATION - REJECT**\n*Đây là test notification từ admin*',
+            embeds: [rejectEmbed] 
+          });
+          console.log('✅ Reject notification sent successfully');
+          sentCount++;
+        } catch (rejectError) {
+          console.error('❌ Failed to send reject notification:', rejectError.message);
+        }
+      }
+
+      const resultEmbed = new EmbedBuilder()
+        .setTitle('🧪 Test User Notifications')
+        .setDescription('**Kết quả test gửi notification cho user**')
+        .addFields(
+          { name: '👤 Target User', value: `<@${testUser.id}>\n\`${testUser.username}\``, inline: false },
+          { name: '📧 Notification Type', value: notificationType.toUpperCase(), inline: true },
+          { name: '📊 Result', value: `✅ Sent ${sentCount} notification${sentCount > 1 ? 's' : ''}`, inline: true },
+          { name: '💡 Note', value: 'Check DMs của user để xem notifications\nNếu không nhận được, có thể user đã tắt DMs', inline: false }
+        )
+        .setColor(sentCount > 0 ? '#00ff00' : '#ff0000')
+        .setTimestamp();
+
+      await interaction.reply({ embeds: [resultEmbed], ephemeral: true });
 
     } catch (error) {
-      console.error('Error in test-user-notifications:', error);
+      console.error('❌ Error testing user notifications:', error);
       await interaction.reply({
-        content: '❌ Error testing notifications.',
+        content: `❌ **Lỗi khi test notifications:**\n\`\`\`${error.message}\`\`\``,
         ephemeral: true
       });
     }
