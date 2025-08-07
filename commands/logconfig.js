@@ -49,7 +49,7 @@ async function execute(interaction) {
             },
             {
               name: '📝 Loại log được ghi',
-              value: '• Câu cá thành công/hụt\n• Nâng cấp cần câu\n• Hoạt động admin\n• Hoàn thành quest\n• Lỗi hệ thống\n• Khởi động bot',
+              value: '• **💰 Giao dịch tiền**: Nhận/trừ/chi tiêu xu\n• **🎣 Câu cá**: Thành công/hụt\n• **⬆️ Nâng cấp**: Cần câu và chi phí\n• **🔧 Sửa chữa**: Cần câu và chi phí\n• **👑 Admin**: Hoạt động quản trị\n• **📋 Quest**: Hoàn thành nhiệm vụ\n• **🎮 Games**: Blackjack win/loss\n• **💬 Chat**: Rewards từ chat\n• **🛠️ System**: Lỗi và khởi động',
               inline: false
             }
           );

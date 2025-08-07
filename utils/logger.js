@@ -37,7 +37,8 @@ export async function logToDiscord(type, title, description, extra = {}) {
       fishing: '#1abc9c',  // Turquoise
       admin: '#9b59b6',    // Purple
       quest: '#f1c40f',    // Yellow
-      upgrade: '#e67e22'   // Orange
+      upgrade: '#e67e22',  // Orange
+      money: '#f1c40f'     // Gold
     };
 
     const emojis = {
@@ -48,7 +49,8 @@ export async function logToDiscord(type, title, description, extra = {}) {
       fishing: '🎣',
       admin: '👑',
       quest: '📋',
-      upgrade: '⬆️'
+      upgrade: '⬆️',
+      money: '💰'
     };
 
     const embed = new EmbedBuilder()
@@ -67,11 +69,49 @@ export async function logToDiscord(type, title, description, extra = {}) {
     }
 
     if (extra.amount !== undefined) {
+      const amountText = type === 'money' 
+        ? `${extra.amount.toLocaleString()} xu`
+        : extra.amount.toLocaleString();
+      
+      let amountLabel = '💰 Số lượng';
+      if (type === 'money') {
+        if (extra.type === 'received') amountLabel = '💰 Nhận được';
+        else if (extra.type === 'deducted') amountLabel = '💸 Mất đi';
+        else if (extra.type === 'spent') amountLabel = '💳 Chi tiêu';
+      }
+      
       embed.addFields({
-        name: '💰 Số lượng',
-        value: extra.amount.toLocaleString(),
+        name: amountLabel,
+        value: amountText,
         inline: true
       });
+    }
+
+    // Thêm thông tin money transaction
+    if (type === 'money') {
+      if (extra.source) {
+        embed.addFields({
+          name: '📍 Nguồn',
+          value: extra.source,
+          inline: true
+        });
+      }
+      
+      if (extra.reason) {
+        embed.addFields({
+          name: '❓ Lý do',
+          value: extra.reason,
+          inline: true
+        });
+      }
+      
+      if (extra.item) {
+        embed.addFields({
+          name: '🛒 Mục đích',
+          value: extra.item,
+          inline: true
+        });
+      }
     }
 
     if (extra.fish) {
@@ -200,4 +240,46 @@ export async function logWarn(title, description, extra = {}) {
  */
 export async function logSuccess(title, description, extra = {}) {
   await logToDiscord('success', title, description, extra);
+}
+
+/**
+ * Log giao dịch tiền - Nhận tiền
+ */
+export async function logMoneyReceived(user, amount, source, extra = {}) {
+  await logToDiscord('money', 'Nhận tiền', `${user.username} đã nhận ${amount.toLocaleString()} xu`, {
+    user,
+    amount,
+    source,
+    type: 'received',
+    command: source,
+    ...extra
+  });
+}
+
+/**
+ * Log giao dịch tiền - Trừ tiền
+ */
+export async function logMoneyDeducted(user, amount, reason, extra = {}) {
+  await logToDiscord('money', 'Trừ tiền', `${user.username} đã mất ${amount.toLocaleString()} xu`, {
+    user,
+    amount,
+    reason,
+    type: 'deducted',
+    command: reason,
+    ...extra
+  });
+}
+
+/**
+ * Log giao dịch tiền - Chi tiêu
+ */
+export async function logMoneySpent(user, amount, item, extra = {}) {
+  await logToDiscord('money', 'Chi tiêu', `${user.username} đã chi ${amount.toLocaleString()} xu`, {
+    user,
+    amount,
+    item,
+    type: 'spent',
+    command: item,
+    ...extra
+  });
 }

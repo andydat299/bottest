@@ -1,6 +1,7 @@
 /**
  * Fishing Penalty System - Hệ thống phạt xu khi hụt cá
  */
+import { logMoneyDeducted } from './logger.js';
 
 // Admin controls
 let penaltySystemEnabled = true;
@@ -152,6 +153,12 @@ export async function applyFishingPenalty(user, penalty, locationId) {
   
   // Random reason
   const reason = PENALTY_REASONS[Math.floor(Math.random() * PENALTY_REASONS.length)];
+  
+  // Log money deducted
+  await logMoneyDeducted(user, penalty, 'fishing-penalty', {
+    reason: reason,
+    locationId: locationId
+  });
   
   // Tính remaining budget
   const remainingBudget = dailyLossLimit - user.dailyLossStats[today].totalLost;

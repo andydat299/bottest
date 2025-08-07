@@ -5,7 +5,7 @@ import { GlobalStats } from '../schemas/globalStatsSchema.js';
 import { selectRandomFish } from '../utils/fishingLogic.js';
 import { checkFishingCooldown, setFishingCooldown, clearFishingCooldown, formatCooldownTime } from '../utils/cooldownManager.js';
 import { updateQuestProgress } from '../utils/questManager.js';
-import { logFishing } from '../utils/logger.js';
+import { logFishing, logMoneyReceived } from '../utils/logger.js';
 import { 
   getMaxDurability, 
   calculateDurabilityLoss, 
@@ -384,6 +384,14 @@ export default {
 
         // Log câu cá thành công
         await logFishing(interaction.user, fish, false);
+        
+        // Log money received from fishing
+        const coinsEarned = safeCoins || (fish ? fish.price : 50);
+        await logMoneyReceived(interaction.user, coinsEarned, 'fishing', {
+          fishName: fish?.name,
+          fishRarity: fish?.rarity,
+          location: currentLocation
+        });
 
         // Cập nhật quest progress
         await updateQuestProgress(discordId, 'fish', 1);

@@ -3,10 +3,11 @@ import { User } from '../schemas/userSchema.js';
 import { fishTypes } from '../utils/fishTypes.js';
 import { updateQuestProgress } from '../utils/questManager.js';
 import { isCommandDisabled } from '../utils/commandControl.js';
+import { logMoneyReceived } from '../utils/logger.js';
 
 export default {
   data: new SlashCommandBuilder().setName('sell').setDescription('Bán toàn bộ cá để lấy tiền'),
-  prefixEnabled: true, // Cho phép sử dụng với prefix
+  prefixEnabled: false, // Cho phép sử dụng với prefix
 
   async execute(interaction) {
     // Kiểm tra lệnh có bị disable không
@@ -32,6 +33,11 @@ export default {
     user.totalSold += total;
     user.fish = new Map();
     await user.save();
+
+    // Log money received from selling fish
+    await logMoneyReceived(interaction.user, total, 'sell-fish', {
+      fishCount: user.fish.size
+    });
 
     // Cập nhật quest earn money
     await updateQuestProgress(interaction.user.id, 'earn', total);

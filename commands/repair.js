@@ -7,6 +7,7 @@ import {
   getDurabilityEmoji,
   getDurabilityStatus 
 } from '../utils/durabilityManager.js';
+import { logMoneySpent } from '../utils/logger.js';
 
 export default {
   data: new SlashCommandBuilder()
@@ -189,6 +190,14 @@ async function handleRepair(interaction, user, repairType) {
   await user.save();
 
   const actualRepair = user.rodDurability - oldDurability;
+
+  // Log money spent on repair
+  await logMoneySpent(interaction.user, cost, 'rod-repair', {
+    repairType: repairType,
+    durabilityBefore: oldDurability,
+    durabilityAfter: user.rodDurability,
+    rodLevel: rodLevel
+  });
 
   const embed = new EmbedBuilder()
     .setColor('#00FF00')

@@ -2,6 +2,7 @@
  * Blackjack (Xì Dách) Game System
  */
 import { User } from '../schemas/userSchema.js';
+import { logMoneySpent, logMoneyReceived, logMoneyDeducted } from './logger.js';
 
 // Cấu hình game
 const GAME_CONFIG = {
@@ -245,7 +246,7 @@ class BlackjackGame {
 
     // Cập nhật database
     try {
-      await User.findOneAndUpdate(
+      const updatedUser = await User.findOneAndUpdate(
         { discordId: this.userId },
         { 
           $inc: { 
@@ -254,8 +255,23 @@ class BlackjackGame {
             'stats.blackjackWinnings': winAmount
           }
         },
-        { upsert: true }
+        { upsert: true, new: true }
       );
+      
+      // Log money transaction
+      if (winAmount > 0) {
+        await logMoneyReceived(updatedUser, winAmount, 'blackjack-win', {
+          gameState: this.gameState,
+          betAmount: this.betAmount
+        });
+      } else if (winAmount < 0) {
+        // Note: winAmount is already negative for losses, so we pass positive amount
+        await logMoneyDeducted(updatedUser, Math.abs(winAmount), 'blackjack-loss', {
+          gameState: this.gameState,
+          betAmount: this.betAmount
+        });
+      }
+      
     } catch (error) {
       console.error('Error updating user after blackjack game:', error);
     }
@@ -298,6 +314,9 @@ export async function startBlackjackGame(userId, betAmount) {
       { discordId: userId },
       { $inc: { balance: -betAmount } }
     );
+
+    // Log money spent on betting
+    await logMoneySpent(user, betAmount, 'blackjack-bet');
 
     // Tạo game mới
     const game = new BlackjackGame(userId, betAmount);
