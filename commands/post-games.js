@@ -36,7 +36,7 @@ export default {
       .addFields(
         {
           name: '🎴 Xì Dách (Blackjack)',
-          value: '• **Mục tiêu**: Đạt 21 điểm mà không vượt quá\n• **Cược**: 1 - 1,000 xu\n• **Blackjack**: Thưởng x1.8\n• **Thắng thường**: Thưởng x1.8',
+          value: '• **Mục tiêu**: Đạt 21 điểm mà không vượt quá\n• **Cược**: 1 - 1,000 xu\n• **Tỷ lệ thắng**: 1:0.8 (cược 1000 → thắng 800)\n• **Tổng nhận**: Cược gốc + tiền thắng',
           inline: false
         },
         {
@@ -53,7 +53,7 @@ export default {
       .setColor('#ffdd57')
       .setThumbnail('https://cdn.discordapp.com/emojis/851461487498887168.png')
       .setFooter({ 
-        text: 'Chơi có trách nhiệm! Đừng cược quá số xu bạn có thể mất.' 
+        text: 'Blackjack công bằng 100%! Luật chuẩn quốc tế được áp dụng.' 
       })
       .setTimestamp();
 

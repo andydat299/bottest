@@ -9,9 +9,9 @@ const GAME_CONFIG = {
   minBet: 1,
   maxBet: 1000,
   dealerStandOn: 17,
-  blackjackPayout: 1.8, // 1.8x payout cho blackjack
-  normalPayout: 1.8,    // 1.8x payout cho thắng thường
-  playerWinRate: 0.3    // 30% tỷ lệ thắng cho người chơi (70% thua)
+  blackjackPayout: 1.8, // 1.8x cho blackjack (21 với 2 lá)
+  normalPayout: 1.8,    // 1.8x cho thắng thường
+  playerWinRate: 0.3    // Bỏ rate này vì không dùng nữa
 };
 
 // Card values và suits
@@ -177,45 +177,23 @@ class BlackjackGame {
       this.dealerHand.addCard(this.deck.draw());
     }
 
-    // Xác định người thắng với house edge 70% (tối ưu cuối cùng)
+    // Xác định người thắng theo luật blackjack chuẩn (không có house edge giả tạo)
     const playerValue = this.playerHand.getValue();
     const dealerValue = this.dealerHand.getValue();
     
-    // Random để quyết định kết quả - điều chỉnh xuống 65%
-    const houseEdgeRoll = Math.random();
-    const DEALER_WIN_RATE = 0.52; // Điều chỉnh để đạt ~65% dealer wins
-    
-    if (houseEdgeRoll <= DEALER_WIN_RATE) {
-      // 52% cơ hội: Dealer thắng (house edge giảm xuống 65%)
-      if (this.dealerHand.isBust()) {
-        // Nếu dealer bust, "sửa" lại để thắng
-        const lastCardIndex = this.dealerHand.cards.length - 1;
-        const targetValue = Math.max(17, Math.min(21, playerValue + 1));
-        const currentWithoutLast = this.dealerHand.getValue() - this.dealerHand.cards[lastCardIndex].getValue();
-        const newCardValue = Math.max(1, Math.min(10, targetValue - currentWithoutLast));
-        
-        this.dealerHand.cards[lastCardIndex] = {
-          suit: '♠️',
-          rank: newCardValue.toString(),
-          getValue: () => newCardValue,
-          toString: () => newCardValue + '♠️'
-        };
-      }
-      
-      // Dealer thắng bất kể điều kiện
+    // Áp dụng luật blackjack thực tế 100%
+    if (this.dealerHand.isBust()) {
+      // Dealer bust → Player thắng
+      this.gameState = 'dealerBust';
+    } else if (playerValue > dealerValue) {
+      // Player điểm cao hơn → Player thắng
+      this.gameState = 'playerWin';
+    } else if (playerValue < dealerValue) {
+      // Dealer điểm cao hơn → Dealer thắng
       this.gameState = 'dealerWin';
-      
     } else {
-      // 48% cơ hội: Áp dụng luật blackjack thực tế
-      if (this.dealerHand.isBust()) {
-        this.gameState = 'dealerBust';
-      } else if (playerValue > dealerValue) {
-        this.gameState = 'playerWin';
-      } else if (playerValue < dealerValue) {
-        this.gameState = 'dealerWin';
-      } else {
-        this.gameState = 'push';
-      }
+      // Điểm bằng nhau → Hòa
+      this.gameState = 'push';
     }
 
     this.isFinished = true;
