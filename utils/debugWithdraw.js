@@ -1,5 +1,5 @@
 // Debug withdraw notification
-export async function debugWithdrawNotification() {
+export function debugWithdrawNotification() {
   console.log('🔍 Debugging withdraw notification...');
   console.log('🌍 All Environment Variables:');
   console.log('- NODE_ENV:', process.env.NODE_ENV);
