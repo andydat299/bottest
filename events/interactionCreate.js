@@ -10,6 +10,7 @@ import {
 } from '../utils/blackjackGame.js';
 import { createGameEmbed, createGameButtons } from '../commands/xidach.js';
 import { handleEvalButtons } from '../commands/evalvm.js';
+import { handleWheelBetModal } from '../commands/wheel.js';
 import { 
   EmbedBuilder, 
   ActionRowBuilder, 
@@ -144,6 +145,10 @@ export default {
       try {
         if (interaction.customId === 'blackjack_bet_modal') {
           await handleBlackjackBetModal(interaction);
+          return;
+        }
+        if (interaction.customId === 'wheel_bet_modal') {
+          await handleWheelBetModal(interaction);
           return;
         }
       } catch (err) {

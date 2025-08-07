@@ -34,7 +34,9 @@ const userSchema = new mongoose.Schema({
     totalChatRewards: { type: Number, default: 0 }, // Tổng xu nhận từ chat
     chatRewardCount: { type: Number, default: 0 },   // Số lần nhận thưởng chat
     blackjackGames: { type: Number, default: 0 },    // Số game blackjack đã chơi
-    blackjackWinnings: { type: Number, default: 0 }  // Tổng thắng/thua blackjack
+    blackjackWinnings: { type: Number, default: 0 }, // Tổng thắng/thua blackjack
+    wheelGames: { type: Number, default: 0 },        // Số lần chơi vòng quay
+    wheelWinnings: { type: Number, default: 0 }      // Tổng thắng/thua vòng quay
   }
 });
 
