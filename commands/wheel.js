@@ -16,13 +16,13 @@ const WHEEL_CONFIG = {
   minBet: 10,
   maxBet: 1000,
   sectors: [
-    { emoji: '💀', name: 'Phá sản', multiplier: 0, chance: 15, color: '#000000' },
-    { emoji: '😢', name: 'Mất nửa', multiplier: 0.5, chance: 20, color: '#ff4444' },
+    { emoji: '💀', name: 'Phá sản', multiplier: 0, chance: 25, color: '#000000' },
+    { emoji: '😢', name: 'Mất nửa', multiplier: 0.5, chance: 28, color: '#ff4444' },
     { emoji: '😐', name: 'Hòa vốn', multiplier: 1, chance: 25, color: '#888888' },
-    { emoji: '😊', name: 'Thắng ít', multiplier: 1.5, chance: 20, color: '#44ff44' },
-    { emoji: '🤑', name: 'Thắng lớn', multiplier: 2.5, chance: 15, color: '#ffff44' },
-    { emoji: '💎', name: 'Siêu thắng', multiplier: 5, chance: 4, color: '#44ffff' },
-    { emoji: '🎰', name: 'JACKPOT!', multiplier: 10, chance: 1, color: '#ff44ff' }
+    { emoji: '😊', name: 'Thắng ít', multiplier: 1.5, chance: 15, color: '#44ff44' },
+    { emoji: '🤑', name: 'Thắng lớn', multiplier: 2.5, chance: 5, color: '#ffff44' },
+    { emoji: '💎', name: 'Siêu thắng', multiplier: 5, chance: 1.8, color: '#44ffff' },
+    { emoji: '🎰', name: 'JACKPOT!', multiplier: 10, chance: 0.2, color: '#ff44ff' }
   ]
 };
 
