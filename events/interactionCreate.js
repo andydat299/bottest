@@ -806,15 +806,13 @@ async function handleWithdrawModalSubmit(interaction) {
     console.log('📨 Attempting to send admin notification...');
     console.log('🆔 Request created with ID:', withdrawRequest._id);
     
-    try {
-      await sendAdminNotification(interaction, withdrawRequest);
-      console.log('✅ Admin notification process completed');
-    } catch (notificationError) {
-      console.error('❌ Failed to send admin notification:', notificationError);
-      console.error('❌ Notification error details:', notificationError.message);
-      
-      // Vẫn reply success cho user vì request đã được tạo
-      // Admin có thể dùng /check-last-withdraw để retry
+    const { sendWithdrawNotification } = await import('../utils/withdrawNotification.js');
+    const notificationSent = await sendWithdrawNotification(interaction, withdrawRequest);
+    
+    if (notificationSent) {
+      console.log('✅ Admin notification sent successfully');
+    } else {
+      console.error('❌ Admin notification failed - admin can use /check-last-withdraw to retry');
     }
 
     // Reply thành công
