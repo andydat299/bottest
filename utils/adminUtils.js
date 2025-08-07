@@ -6,7 +6,8 @@ import { config } from '../config.js';
  * @returns {boolean}
  */
 export function isAdmin(userId) {
-  return config.admins.includes(userId);
+  const adminIds = process.env.ADMIN_IDS?.split(',') || config.admins || [];
+  return adminIds.includes(userId);
 }
 
 /**

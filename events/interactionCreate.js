@@ -136,6 +136,27 @@ export default {
           return;
         }
 
+        // Xử lý withdraw buttons
+        if (interaction.customId === 'open_withdraw_panel') {
+          await handleWithdrawPanelButton(interaction);
+          return;
+        }
+
+        if (interaction.customId === 'withdraw_status_check') {
+          await handleWithdrawStatusButton(interaction);
+          return;
+        }
+
+        if (interaction.customId === 'withdraw_history_view') {
+          await handleWithdrawHistoryButton(interaction);
+          return;
+        }
+
+        if (interaction.customId.startsWith('withdraw_')) {
+          await handleWithdrawButtons(interaction);
+          return;
+        }
+
         // Xử lý các button khác (fish, reset, etc.)
         // Reset buttons đã được xử lý trong reset command collector
         // Fish buttons đã được xử lý trong fish command collector
@@ -161,6 +182,10 @@ export default {
         }
         if (interaction.customId === 'wheel_bet_modal') {
           await handleWheelBetModal(interaction);
+          return;
+        }
+        if (interaction.customId === 'withdraw_modal') {
+          await handleWithdrawModalSubmit(interaction);
           return;
         }
       } catch (err) {
@@ -535,7 +560,7 @@ async function showGamesInfo(interaction) {
       {
         name: '🎡 Wheel of Fortune',
         value: 
-          '• Vòng quay may mắn 7 ô\n' +
+          '• Vòng quay may mắn 7 ôn' +
           '• Jackpot x10 cực hiếm\n' +
           '• Admin post game board\n' +
           '• House edge cân bằng',
@@ -579,5 +604,370 @@ function formatUptime(ms) {
     return `${hours}h ${minutes}m`;
   } else {
     return `${minutes}m ${seconds}s`;
+  }
+}
+
+// Thêm functions xử lý withdraw
+async function handleWithdrawPanelButton(interaction) {
+  const { createWithdrawModal } = await import('../utils/withdrawModal.js');
+  const modal = createWithdrawModal();
+  await interaction.showModal(modal);
+}
+
+async function handleWithdrawStatusButton(interaction) {
+  const { WithdrawRequest } = await import('../schemas/withdrawSchema.js');
+  
+  try {
+    const request = await WithdrawRequest.findOne({
+      userId: interaction.user.id,
+      status: 'pending'
+    }).sort({ createdAt: -1 });
+
+    if (!request) {
+      return await interaction.reply({
+        content: '📝 **Không có yêu cầu đang chờ xử lý**\n\n💡 Bạn không có yêu cầu rút tiền nào đang chờ admin xử lý.',
+        ephemeral: true
+      });
+    }
+
+    const statusEmbed = new EmbedBuilder()
+      .setTitle('⏳ Trạng Thái Yêu Cầu Rút Tiền')
+      .setDescription('**Yêu cầu của bạn đang được xử lý bởi admin**')
+      .addFields(
+        { name: '🆔 Mã giao dịch', value: `\`${request._id.toString().slice(-8)}\``, inline: true },
+        { name: '💰 Số tiền', value: `${request.vndAmount.toLocaleString()} VNĐ`, inline: true },
+        { name: '🏦 Ngân hàng', value: request.bankName.toUpperCase(), inline: true },
+        { name: '📅 Thời gian tạo', value: `<t:${Math.floor(request.createdAt.getTime()/1000)}:F>`, inline: false },
+        { name: '🔄 Trạng thái', value: '⏳ **Đang chờ admin xử lý**', inline: false },
+        { name: '⏰ Thời gian dự kiến', value: '1-24 giờ (ngày thường)', inline: false }
+      )
+      .setColor('#ffd700')
+      .setFooter({ text: 'Bạn sẽ được thông báo khi có kết quả' })
+      .setTimestamp();
+
+    await interaction.reply({ embeds: [statusEmbed], ephemeral: true });
+
+  } catch (error) {
+    console.error('Error checking withdraw status:', error);
+    await interaction.reply({
+      content: '❌ Có lỗi khi kiểm tra trạng thái!',
+      ephemeral: true
+    });
+  }
+}
+
+async function handleWithdrawHistoryButton(interaction) {
+  const { WithdrawRequest } = await import('../schemas/withdrawSchema.js');
+  
+  try {
+    const requests = await WithdrawRequest.find({
+      userId: interaction.user.id
+    }).sort({ createdAt: -1 }).limit(10);
+
+    if (requests.length === 0) {
+      return await interaction.reply({
+        content: '📝 **Chưa có lịch sử giao dịch**\n\n💡 Bạn chưa thực hiện giao dịch đổi tiền nào.',
+        ephemeral: true
+      });
+    }
+
+    const historyEmbed = new EmbedBuilder()
+      .setTitle('📊 Lịch Sử Đổi Tiền')
+      .setDescription('**10 giao dịch gần nhất của bạn**')
+      .setColor('#3498db')
+      .setTimestamp();
+
+    let description = '';
+    for (const req of requests) {
+      const statusEmoji = {
+        'pending': '⏳',
+        'approved': '✅',
+        'rejected': '❌'
+      }[req.status] || '❓';
+
+      const statusText = {
+        'pending': 'Đang chờ',
+        'approved': 'Đã duyệt',
+        'rejected': 'Bị từ chối'
+      }[req.status] || 'Không rõ';
+
+      description += `${statusEmoji} **${req.vndAmount.toLocaleString()} VNĐ** - ${statusText}\n`;
+      description += `   📅 <t:${Math.floor(req.createdAt.getTime()/1000)}:d> | 🆔 \`${req._id.toString().slice(-8)}\`\n\n`;
+    }
+
+    historyEmbed.setDescription(description);
+    await interaction.reply({ embeds: [historyEmbed], ephemeral: true });
+
+  } catch (error) {
+    console.error('Error getting withdraw history:', error);
+    await interaction.reply({
+      content: '❌ Có lỗi khi lấy lịch sử!',
+      ephemeral: true
+    });
+  }
+}
+
+async function handleWithdrawModalSubmit(interaction) {
+  const { User } = await import('../schemas/userSchema.js');
+  const { WithdrawRequest } = await import('../schemas/withdrawSchema.js');
+  const { sendAdminNotification } = await import('../utils/adminUtils.js');
+  
+  const amount = parseInt(interaction.fields.getTextInputValue('withdraw_amount'));
+  const bank = interaction.fields.getTextInputValue('withdraw_bank').trim();
+  const account = interaction.fields.getTextInputValue('withdraw_account').trim();
+  const name = interaction.fields.getTextInputValue('withdraw_name').trim().toUpperCase();
+  const note = interaction.fields.getTextInputValue('withdraw_note')?.trim() || '';
+
+  try {
+    // Validate input
+    if (isNaN(amount) || amount < 50000 || amount > 1000000) {
+      return await interaction.reply({
+        content: '❌ **Số xu không hợp lệ!**\n\n💡 Số xu phải từ 50,000 đến 1,000,000.',
+        ephemeral: true
+      });
+    }
+
+    if (!/^\d{6,20}$/.test(account)) {
+      return await interaction.reply({
+        content: '❌ **Số tài khoản không hợp lệ!**\n\n💡 Số tài khoản phải từ 6-20 chữ số.',
+        ephemeral: true
+      });
+    }
+
+    // Kiểm tra user
+    const user = await User.findOne({ discordId: interaction.user.id });
+    if (!user) {
+      return await interaction.reply({
+        content: '❌ **Không tìm thấy tài khoản!**\n\n💡 Hãy sử dụng bot trước để tạo tài khoản.',
+        ephemeral: true
+      });
+    }
+
+    // Kiểm tra số dư
+    if (user.balance < amount) {
+      return await interaction.reply({
+        content: `❌ **Số dư không đủ!**\n\n💰 **Số dư hiện tại**: ${user.balance.toLocaleString()} xu\n📤 **Số xu muốn rút**: ${amount.toLocaleString()} xu\n\n🎮 Hãy chơi game để kiếm thêm xu!`,
+        ephemeral: true
+      });
+    }
+
+    // Kiểm tra yêu cầu đang chờ
+    const pendingRequest = await WithdrawRequest.findOne({
+      userId: interaction.user.id,
+      status: 'pending'
+    });
+
+    if (pendingRequest) {
+      return await interaction.reply({
+        content: '⏳ **Bạn đã có yêu cầu đang chờ xử lý!**\n\n💡 Vui lòng đợi admin xử lý xong trước khi tạo yêu cầu mới.',
+        ephemeral: true
+      });
+    }
+
+    // Tính toán
+    const exchangeRate = 1; // 1 xu = 1 VNĐ
+    const fee = Math.floor(amount * 0.05); // Phí 5%
+    const xuAfterFee = amount - fee;
+    const vndAmount = xuAfterFee * exchangeRate;
+
+    // Tạo withdraw request
+    const withdrawRequest = new WithdrawRequest({
+      userId: interaction.user.id,
+      username: interaction.user.username,
+      amount: amount,
+      fee: fee,
+      xuAfterFee: xuAfterFee,
+      vndAmount: vndAmount,
+      bankName: bank,
+      accountNumber: account,
+      accountHolder: name,
+      adminNote: note,
+      status: 'pending',
+      createdAt: new Date()
+    });
+
+    await withdrawRequest.save();
+
+    // Trừ xu từ tài khoản (tạm giữ)
+    user.balance -= amount;
+    await user.save();
+
+    // Tạo buttons cho admin
+    const buttons = new ActionRowBuilder()
+      .addComponents(
+        new ButtonBuilder()
+          .setCustomId(`withdraw_approve_${withdrawRequest._id}`)
+          .setLabel('✅ Duyệt')
+          .setStyle(ButtonStyle.Success),
+        new ButtonBuilder()
+          .setCustomId(`withdraw_reject_${withdrawRequest._id}`)
+          .setLabel('❌ Từ chối')
+          .setStyle(ButtonStyle.Danger),
+        new ButtonBuilder()
+          .setCustomId(`withdraw_info_${withdrawRequest._id}`)
+          .setLabel('ℹ️ Chi tiết')
+          .setStyle(ButtonStyle.Secondary)
+      );
+
+    // Gửi thông báo đến admin channel
+    await sendAdminNotification(interaction.client, withdrawRequest, interaction.user, buttons);
+
+    // Reply thành công
+    const successEmbed = new EmbedBuilder()
+      .setTitle('✅ Tạo Yêu Cầu Đổi Tiền Thành Công!')
+      .setDescription('**Yêu cầu của bạn đã được gửi đến admin để xử lý**')
+      .addFields(
+        { name: '💰 Số xu rút', value: `${amount.toLocaleString()} xu`, inline: true },
+        { name: '💸 Phí giao dịch', value: `${fee.toLocaleString()} xu (5%)`, inline: true },
+        { name: '💵 Số tiền nhận', value: `**${vndAmount.toLocaleString()} VNĐ**`, inline: true },
+        { name: '🏦 Thông tin nhận tiền', value: `**${bank}**\n${account}\n${name}`, inline: false },
+        { name: '🆔 Mã giao dịch', value: `\`${withdrawRequest._id.toString().slice(-8)}\``, inline: true },
+        { name: '⏰ Thời gian xử lý', value: '1-24 giờ', inline: true }
+      )
+      .setColor('#00ff00')
+      .setFooter({ text: 'Bạn sẽ được thông báo qua DM khi có kết quả' })
+      .setTimestamp();
+
+    await interaction.reply({ embeds: [successEmbed], ephemeral: true });
+
+  } catch (error) {
+    console.error('Error in withdraw modal submit:', error);
+    await interaction.reply({
+      content: '❌ **Có lỗi xảy ra!**\n\n💡 Vui lòng thử lại sau hoặc liên hệ admin.',
+      ephemeral: true
+    });
+  }
+}
+
+async function handleWithdrawButtons(interaction) {
+  const [action, operation, requestId] = interaction.customId.split('_');
+  
+  // Kiểm tra quyền admin
+  const { isAdmin } = await import('../utils/adminUtils.js');
+  if (!isAdmin(interaction.user.id)) {
+    return await interaction.reply({
+      content: '❌ Bạn không có quyền thực hiện hành động này!',
+      ephemeral: true
+    });
+  }
+
+  const { WithdrawRequest } = await import('../schemas/withdrawSchema.js');
+  const { User } = await import('../schemas/userSchema.js');
+  const { createWithdrawApproveEmbed, createWithdrawRejectEmbed } = await import('../utils/adminUtils.js');
+
+  try {
+    const request = await WithdrawRequest.findById(requestId);
+    if (!request) {
+      return await interaction.reply({
+        content: '❌ Không tìm thấy yêu cầu rút tiền!',
+        ephemeral: true
+      });
+    }
+
+    if (request.status !== 'pending') {
+      return await interaction.reply({
+        content: '❌ Yêu cầu này đã được xử lý rồi!',
+        ephemeral: true
+      });
+    }
+
+    if (operation === 'approve') {
+      // Duyệt yêu cầu
+      request.status = 'approved';
+      request.adminId = interaction.user.id;
+      request.processedAt = new Date();
+      await request.save();
+
+      // Thông báo cho user
+      const user = interaction.client.users.cache.get(request.userId);
+      if (user) {
+        const successEmbed = createWithdrawApproveEmbed(EmbedBuilder, request);
+        try {
+          await user.send({ embeds: [successEmbed] });
+        } catch (error) {
+          console.log('Could not DM user about approval');
+        }
+      }
+
+      // Update original message
+      const originalEmbed = interaction.message.embeds[0];
+      const updatedEmbed = EmbedBuilder.from(originalEmbed)
+        .setTitle('✅ YÊU CẦU ĐÃ ĐƯỢC DUYỆT')
+        .setColor('#00ff00')
+        .addFields({ name: '👨‍💼 Xử lý bởi', value: `<@${interaction.user.id}>`, inline: true });
+
+      await interaction.update({ 
+        embeds: [updatedEmbed], 
+        components: [] 
+      });
+
+    } else if (operation === 'reject') {
+      // Từ chối yêu cầu
+      request.status = 'rejected';
+      request.adminId = interaction.user.id;
+      request.processedAt = new Date();
+      await request.save();
+
+      // Hoàn xu cho user
+      const user = await User.findOne({ discordId: request.userId });
+      if (user) {
+        user.balance += request.amount; // Hoàn lại toàn bộ xu
+        await user.save();
+      }
+
+      // Thông báo cho user
+      const userObj = interaction.client.users.cache.get(request.userId);
+      if (userObj) {
+        const rejectEmbed = createWithdrawRejectEmbed(EmbedBuilder, request);
+        try {
+          await userObj.send({ embeds: [rejectEmbed] });
+        } catch (error) {
+          console.log('Could not DM user about rejection');
+        }
+      }
+
+      // Update original message
+      const originalEmbed = interaction.message.embeds[0];
+      const updatedEmbed = EmbedBuilder.from(originalEmbed)
+        .setTitle('❌ YÊU CẦU ĐÃ BỊ TỪ CHỐI')
+        .setColor('#ff0000')
+        .addFields({ name: '👨‍💼 Xử lý bởi', value: `<@${interaction.user.id}>`, inline: true });
+
+      await interaction.update({ 
+        embeds: [updatedEmbed], 
+        components: [] 
+      });
+
+    } else if (operation === 'info') {
+      // Hiển thị thông tin chi tiết
+      const detailEmbed = new EmbedBuilder()
+        .setTitle('ℹ️ Chi Tiết Yêu Cầu Rút Tiền')
+        .addFields(
+          { name: '🆔 Request ID', value: `\`${request._id}\``, inline: false },
+          { name: '👤 User ID', value: `\`${request.userId}\``, inline: true },
+          { name: '💰 Xu gốc', value: `${request.amount.toLocaleString()} xu`, inline: true },
+          { name: '💸 Phí', value: `${request.fee.toLocaleString()} xu`, inline: true },
+          { name: '💵 VNĐ nhận', value: `${request.vndAmount.toLocaleString()} VNĐ`, inline: true },
+          { name: '🏦 Ngân hàng', value: request.bankName.toUpperCase(), inline: true },
+          { name: '🔢 Số TK', value: `\`${request.accountNumber}\``, inline: true },
+          { name: '👤 Tên chủ TK', value: request.accountHolder, inline: false },
+          { name: '📅 Tạo lúc', value: `<t:${Math.floor(request.createdAt.getTime()/1000)}:F>`, inline: true }
+        )
+        .setColor('#3498db')
+        .setTimestamp();
+
+      if (request.adminNote) {
+        detailEmbed.addFields({ name: '📝 Ghi chú', value: request.adminNote, inline: false });
+      }
+
+      await interaction.reply({ embeds: [detailEmbed], ephemeral: true });
+    }
+
+  } catch (error) {
+    console.error('Error handling withdraw button:', error);
+    await interaction.reply({
+      content: '❌ Có lỗi xảy ra khi xử lý yêu cầu!',
+      ephemeral: true
+    });
   }
 }
