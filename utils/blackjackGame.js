@@ -177,38 +177,44 @@ class BlackjackGame {
       this.dealerHand.addCard(this.deck.draw());
     }
 
-    // Xác định người thắng với tỷ lệ điều chỉnh
+    // Xác định người thắng với house edge 70% (tối ưu cuối cùng)
     const playerValue = this.playerHand.getValue();
     const dealerValue = this.dealerHand.getValue();
     
-    // Random để quyết định kết quả theo tỷ lệ 30% thắng, 70% thua
-    const randomOutcome = Math.random();
+    // Random để quyết định kết quả - điều chỉnh xuống 65%
+    const houseEdgeRoll = Math.random();
+    const DEALER_WIN_RATE = 0.52; // Điều chỉnh để đạt ~65% dealer wins
     
-    if (this.dealerHand.isBust()) {
-      // Nếu dealer bust, player có thể thắng (tùy theo tỷ lệ)
-      if (randomOutcome <= GAME_CONFIG.playerWinRate) {
-        this.gameState = 'dealerBust';
-      } else {
-        // Điều chỉnh: cho dealer thêm bài để không bust
-        this.dealerHand.cards[this.dealerHand.cards.length - 1] = {
+    if (houseEdgeRoll <= DEALER_WIN_RATE) {
+      // 52% cơ hội: Dealer thắng (house edge giảm xuống 65%)
+      if (this.dealerHand.isBust()) {
+        // Nếu dealer bust, "sửa" lại để thắng
+        const lastCardIndex = this.dealerHand.cards.length - 1;
+        const targetValue = Math.max(17, Math.min(21, playerValue + 1));
+        const currentWithoutLast = this.dealerHand.getValue() - this.dealerHand.cards[lastCardIndex].getValue();
+        const newCardValue = Math.max(1, Math.min(10, targetValue - currentWithoutLast));
+        
+        this.dealerHand.cards[lastCardIndex] = {
           suit: '♠️',
-          rank: '5',
-          getValue: () => 5
+          rank: newCardValue.toString(),
+          getValue: () => newCardValue,
+          toString: () => newCardValue + '♠️'
         };
-        this.gameState = 'dealerWin';
       }
+      
+      // Dealer thắng bất kể điều kiện
+      this.gameState = 'dealerWin';
+      
     } else {
-      // Logic với tỷ lệ điều chỉnh
-      if (randomOutcome <= GAME_CONFIG.playerWinRate) {
-        // Player được phép thắng (30%)
-        if (playerValue >= dealerValue) {
-          this.gameState = playerValue > dealerValue ? 'playerWin' : 'push';
-        } else {
-          this.gameState = 'playerWin'; // Boost cho player
-        }
-      } else {
-        // Player thua (70% tỷ lệ)
+      // 48% cơ hội: Áp dụng luật blackjack thực tế
+      if (this.dealerHand.isBust()) {
+        this.gameState = 'dealerBust';
+      } else if (playerValue > dealerValue) {
+        this.gameState = 'playerWin';
+      } else if (playerValue < dealerValue) {
         this.gameState = 'dealerWin';
+      } else {
+        this.gameState = 'push';
       }
     }
 

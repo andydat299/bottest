@@ -36,7 +36,7 @@ export default {
       .addFields(
         {
           name: '🎴 Xì Dách (Blackjack)',
-          value: '• **Mục tiêu**: Đạt 21 điểm mà không vượt quá\n• **Cược**: 100 - 50,000 xu\n• **Blackjack**: Thưởng x1.5\n• **Thắng thường**: Thưởng x0.8',
+          value: '• **Mục tiêu**: Đạt 21 điểm mà không vượt quá\n• **Cược**: 1 - 1,000 xu\n• **Blackjack**: Thưởng x1.8\n• **Thắng thường**: Thưởng x1.8',
           inline: false
         },
         {
