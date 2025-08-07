@@ -797,13 +797,21 @@ async function handleWithdrawModalSubmit(interaction) {
     const buttons = new ActionRowBuilder()
       .addComponents(
         new ButtonBuilder()
+          .setCustomId(`withdraw_qr_${withdrawRequest._id}`)
+          .setLabel('📱 Tạo QR')
+          .setStyle(ButtonStyle.Primary),
+        new ButtonBuilder()
           .setCustomId(`withdraw_approve_${withdrawRequest._id}`)
           .setLabel('✅ Duyệt')
           .setStyle(ButtonStyle.Success),
         new ButtonBuilder()
           .setCustomId(`withdraw_reject_${withdrawRequest._id}`)
           .setLabel('❌ Từ chối')
-          .setStyle(ButtonStyle.Danger),
+          .setStyle(ButtonStyle.Danger)
+      );
+
+    const infoButton = new ActionRowBuilder()
+      .addComponents(
         new ButtonBuilder()
           .setCustomId(`withdraw_info_${withdrawRequest._id}`)
           .setLabel('ℹ️ Chi tiết')
@@ -818,7 +826,7 @@ async function handleWithdrawModalSubmit(interaction) {
       amount: request.vndAmount
     });
     
-    await sendAdminNotification(interaction.client, withdrawRequest, interaction.user, buttons);
+    await sendAdminNotification(interaction.client, withdrawRequest, interaction.user, [buttons, infoButton]);
 
     // Reply thành công
     const successEmbed = new EmbedBuilder()
@@ -907,6 +915,16 @@ async function handleWithdrawButtons(interaction) {
       await interaction.update({ 
         embeds: [updatedEmbed], 
         components: [] 
+      });
+
+    } else if (operation === 'qr') {
+      // Tạo QR code cho chuyển khoản
+      const { createQREmbed } = await import('../utils/bankQR.js');
+      const qrEmbed = createQREmbed(EmbedBuilder, request);
+      
+      await interaction.reply({ 
+        embeds: [qrEmbed], 
+        ephemeral: true 
       });
 
     } else if (operation === 'reject') {
