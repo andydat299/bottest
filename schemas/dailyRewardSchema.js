@@ -42,7 +42,11 @@ const dailyRewardSchema = new mongoose.Schema({
     type: String,
     name: String,
     unlockedAt: Date
-  }]
+  }],
+  wheelSpinUsed: {
+    type: Boolean,
+    default: false
+  }
 }, {
   timestamps: true
 });
