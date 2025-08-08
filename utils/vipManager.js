@@ -7,13 +7,13 @@
  */
 export const VIP_TIERS = {
   bronze: {
-    name: '🥉 VIP Bronze',
-    cost: 50000,
+    name: '🥉 VIP Đồng',
+    cost: 100000, // 100k xu
     duration: 30, // days
     benefits: {
       fishingMissReduction: 10,
       rareFishBoost: 20,
-      dailyBonus: 500,
+      dailyBonus: 1000,
       casinoWinBoost: 5,
       cooldownReduction: 25,
       shopDiscount: 10,
@@ -26,13 +26,13 @@ export const VIP_TIERS = {
     }
   },
   silver: {
-    name: '🥈 VIP Silver',
-    cost: 150000,
+    name: '🥈 VIP Bạc',
+    cost: 300000, // 300k xu
     duration: 30,
     benefits: {
       fishingMissReduction: 20,
       rareFishBoost: 40,
-      dailyBonus: 1000,
+      dailyBonus: 2500,
       casinoWinBoost: 10,
       cooldownReduction: 50,
       shopDiscount: 20,
@@ -45,13 +45,13 @@ export const VIP_TIERS = {
     }
   },
   gold: {
-    name: '🥇 VIP Gold',
-    cost: 500000,
+    name: '🥇 VIP Vàng',
+    cost: 800000, // 800k xu
     duration: 30,
     benefits: {
       fishingMissReduction: 30,
       rareFishBoost: 60,
-      dailyBonus: 2000,
+      dailyBonus: 5000,
       casinoWinBoost: 15,
       cooldownReduction: 75,
       shopDiscount: 30,
@@ -64,13 +64,13 @@ export const VIP_TIERS = {
     }
   },
   diamond: {
-    name: '💎 VIP Diamond',
-    cost: 1500000,
+    name: '💎 VIP Kim Cương',
+    cost: 2000000, // 2M xu
     duration: 30,
     benefits: {
       fishingMissReduction: 50,
       rareFishBoost: 100,
-      dailyBonus: 5000,
+      dailyBonus: 10000,
       casinoWinBoost: 25,
       cooldownReduction: 100,
       shopDiscount: 50,
@@ -89,78 +89,78 @@ export const VIP_TIERS = {
  */
 export const MYSTERY_BOX_TYPES = {
   basic: {
-    name: '🎁 Basic Mystery Box',
-    cost: 5000,
+    name: '🎁 Hộp Bí Ẩn Cơ Bản',
+    cost: 10000, // 10k xu
     rewards: {
       common: { chance: 60, items: [
-        { type: 'xu', value: [1000, 5000] },
-        { type: 'item', name: 'Basic Fishing Rod', value: 2000 }
+        { type: 'xu', value: [2000, 8000] },
+        { type: 'item', name: 'Cần Câu Cơ Bản', value: 3000 }
       ]},
       uncommon: { chance: 25, items: [
-        { type: 'item', name: 'Fishing Rod Upgrade', value: 5000 },
-        { type: 'item', name: 'Lucky Charm', value: 3000, duration: 3600 }
+        { type: 'item', name: 'Nâng Cấp Cần Câu', value: 8000 },
+        { type: 'item', name: 'Bùa May Mắn', value: 5000, duration: 3600 }
       ]},
       rare: { chance: 10, items: [
-        { type: 'xu', value: [10000, 25000] },
-        { type: 'multiplier', name: 'XP Multiplier', value: 2, duration: 3600 }
+        { type: 'xu', value: [15000, 35000] },
+        { type: 'multiplier', name: 'Nhân Đôi Kinh Nghiệm', value: 2, duration: 3600 }
       ]},
       epic: { chance: 4, items: [
-        { type: 'vip', name: 'VIP Bronze', value: 3, tier: 'bronze' },
-        { type: 'xu', value: 50000 }
+        { type: 'vip', name: 'VIP Đồng', value: 3, tier: 'bronze' },
+        { type: 'xu', value: 75000 }
       ]},
       legendary: { chance: 1, items: [
-        { type: 'vip', name: 'VIP Silver', value: 7, tier: 'silver' },
-        { type: 'xu', value: 100000 }
+        { type: 'vip', name: 'VIP Bạc', value: 7, tier: 'silver' },
+        { type: 'xu', value: 150000 }
       ]}
     }
   },
   mega: {
-    name: '🎊 Mega Mystery Box',
-    cost: 25000,
+    name: '🎊 Hộp Bí Ẩn Khổng Lồ',
+    cost: 50000, // 50k xu
     rewards: {
       common: { chance: 40, items: [
-        { type: 'xu', value: [5000, 15000] },
-        { type: 'item', name: 'Multiple Basic Items', value: 8000 }
+        { type: 'xu', value: [10000, 30000] },
+        { type: 'item', name: 'Nhiều Vật Phẩm Cơ Bản', value: 15000 }
       ]},
       uncommon: { chance: 30, items: [
-        { type: 'item', name: 'Advanced Fishing Gear', value: 15000 },
-        { type: 'item', name: 'Casino Booster', value: 10000, duration: 7200 }
+        { type: 'item', name: 'Thiết Bị Câu Cá Cao Cấp', value: 25000 },
+        { type: 'item', name: 'Tăng Cường Casino', value: 18000, duration: 7200 }
       ]},
       rare: { chance: 20, items: [
-        { type: 'xu', value: [25000, 75000] },
-        { type: 'vip', name: 'VIP Bronze', value: 7, tier: 'bronze' }
+        { type: 'xu', value: [40000, 100000] },
+        { type: 'vip', name: 'VIP Đồng', value: 7, tier: 'bronze' }
       ]},
       epic: { chance: 8, items: [
-        { type: 'vip', name: 'VIP Silver', value: 14, tier: 'silver' },
-        { type: 'xu', value: [100000, 200000] }
+        { type: 'vip', name: 'VIP Bạc', value: 14, tier: 'silver' },
+        { type: 'xu', value: [150000, 300000] }
       ]},
       legendary: { chance: 2, items: [
-        { type: 'vip', name: 'VIP Gold', value: 7, tier: 'gold' },
-        { type: 'xu', value: 500000 }
+        { type: 'vip', name: 'VIP Vàng', value: 7, tier: 'gold' },
+        { type: 'xu', value: 600000 }
       ]}
     }
   },
   diamond: {
-    name: '💎 Diamond Mystery Box',
-    cost: 100000,
+    name: '💎 Hộp Bí Ẩn Kim Cương',
+    cost: 200000, // 200k xu
     vipRequired: true,
     rewards: {
       rare: { chance: 50, items: [
-        { type: 'xu', value: [50000, 150000] },
-        { type: 'vip', name: 'VIP Silver', value: 14, tier: 'silver' }
+        { type: 'xu', value: [100000, 250000] },
+        { type: 'vip', name: 'VIP Bạc', value: 14, tier: 'silver' }
       ]},
       epic: { chance: 35, items: [
-        { type: 'vip', name: 'VIP Gold', value: 14, tier: 'gold' },
-        { type: 'xu', value: [200000, 500000] }
+        { type: 'vip', name: 'VIP Vàng', value: 14, tier: 'gold' },
+        { type: 'xu', value: [300000, 600000] }
       ]},
       legendary: { chance: 12, items: [
-        { type: 'vip', name: 'VIP Diamond', value: 7, tier: 'diamond' },
-        { type: 'xu', value: 1000000 }
+        { type: 'vip', name: 'VIP Kim Cương', value: 7, tier: 'diamond' },
+        { type: 'xu', value: 1200000 }
       ]},
       mythical: { chance: 3, items: [
-        { type: 'vip', name: 'VIP Diamond', value: 30, tier: 'diamond' },
-        { type: 'xu', value: 2000000 },
-        { type: 'special', name: 'Exclusive Title', value: 0 }
+        { type: 'vip', name: 'VIP Kim Cương', value: 30, tier: 'diamond' },
+        { type: 'xu', value: 2500000 },
+        { type: 'special', name: 'Danh Hiệu Độc Quyền', value: 0 }
       ]}
     }
   }
