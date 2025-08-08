@@ -31,9 +31,11 @@ export default {
         .setColor('#3498db')
         .setTimestamp();
 
-      // User VIP info with comprehensive field checking
+      // User VIP info with comprehensive field checking - use actual schema fields
       const allVipFields = {
         vipTier: user.vipTier,
+        currentVipTier: user.currentVipTier,  // This exists in schema!
+        isVip: user.isVip,                    // This exists in schema!
         vipLevel: user.vipLevel,
         vip: user.vip,
         premium: user.premium,
@@ -49,18 +51,21 @@ export default {
         .map(([key, value]) => `${key}: ${JSON.stringify(value)}`)
         .join('\n');
 
-      // Detect actual VIP value
+      // Detect actual VIP value - prioritize currentVipTier
       const possibleVipValues = Object.values(allVipFields).filter(Boolean);
-      const detectedVip = possibleVipValues.find(vip => 
-        ['bronze', 'silver', 'gold', 'diamond'].includes(String(vip).toLowerCase())
-      );
+      const detectedVip = user.currentVipTier || // Use currentVipTier first
+                         possibleVipValues.find(vip => 
+                           ['bronze', 'silver', 'gold', 'diamond'].includes(String(vip).toLowerCase())
+                         );
 
-      const userVipTier = detectedVip || user.vipTier || null;
+      const finalVipTier = detectedVip || user.vipTier || null;
 
       embed.addFields({
         name: '👑 **VIP Status**',
-        value: `**Primary VIP Tier:** ${userVipTier ? userVipTier.toUpperCase() : 'NONE'}\n` +
+        value: `**Primary VIP Tier:** ${finalVipTier ? finalVipTier.toUpperCase() : 'NONE'}\n` +
                `**Detected VIP:** ${detectedVip ? detectedVip.toUpperCase() : 'NONE'}\n` +
+               `**Current VIP Tier:** ${user.currentVipTier ? user.currentVipTier.toUpperCase() : 'NONE'}\n` +
+               `**Is VIP:** ${user.isVip ? 'TRUE' : 'FALSE'}\n` +
                `**Balance:** ${userBalance.toLocaleString()} xu\n` +
                `**Current Rod Level:** ${currentRodLevel}`,
         inline: false
@@ -80,7 +85,7 @@ export default {
         'diamond': 4
       };
 
-      const userVipLevel = vipHierarchy[userVipTier?.toLowerCase()] || 0;
+      const userVipLevel = vipHierarchy[finalVipTier?.toLowerCase()] || 0;
 
       embed.addFields({
         name: '🎯 **VIP Level Mapping**',
@@ -118,7 +123,7 @@ export default {
       });
 
       // Available rods count
-      const availableRods = getAvailableRods(userBalance, userVipTier);
+      const availableRods = getAvailableRods(userBalance, finalVipTier);
       const accessibleRods = availableRods.filter(rod => rod.hasVipAccess);
       const affordableRods = availableRods.filter(rod => rod.canAfford && rod.hasVipAccess);
 
@@ -137,8 +142,9 @@ export default {
         name: '🔍 **Raw Debug Data**',
         value: `\`\`\`json\n` +
                `{\n` +
-               `  "vipTier": ${JSON.stringify(user.vipTier)},\n` +
-               `  "vipType": "${typeof user.vipTier}",\n` +
+               `  "currentVipTier": ${JSON.stringify(user.currentVipTier)},\n` +
+               `  "isVip": ${JSON.stringify(user.isVip)},\n` +
+               `  "finalVipTier": ${JSON.stringify(finalVipTier)},\n` +
                `  "vipLevel": ${userVipLevel},\n` +
                `  "rodLevel": ${currentRodLevel},\n` +
                `  "balance": ${userBalance}\n` +
@@ -147,7 +153,7 @@ export default {
       });
 
       // Recommended actions
-      if (userVipTier === 'bronze' || userVipTier === 'silver' || userVipTier === 'gold' || userVipTier === 'diamond') {
+      if (finalVipTier && ['bronze', 'silver', 'gold', 'diamond'].includes(finalVipTier.toLowerCase())) {
         embed.addFields({
           name: '✅ **VIP Status OK**',
           value: 'VIP đã được nhận diện chính xác.\n' +

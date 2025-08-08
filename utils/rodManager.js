@@ -271,7 +271,7 @@ export function getUpgradeInfo(currentLevel, userBalance) {
 /**
  * Get rods available for purchase
  * @param {number} userBalance - User's current balance
- * @param {string} vipTier - User's VIP tier
+ * @param {string} vipTier - User's VIP tier (from currentVipTier field)
  * @returns {Array} Available rods
  */
 export function getAvailableRods(userBalance, vipTier = null) {

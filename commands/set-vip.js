@@ -37,6 +37,11 @@ export default {
 
       const { User } = await import('../schemas/userSchema.js');
       
+      // Debug: Check schema first
+      console.log('=== SCHEMA DEBUG ===');
+      console.log('User schema paths:', Object.keys(User.schema.paths));
+      console.log('===================');
+      
       const targetUser = interaction.options.getUser('user') || interaction.user;
       const vipTier = interaction.options.getString('tier');
       
@@ -48,18 +53,35 @@ export default {
         });
       }
 
-      // Store old VIP for comparison
-      const oldVip = user.vipTier;
+      // Debug: Show current user data
+      console.log('=== USER DATA BEFORE ===');
+      console.log('Raw user object:', JSON.stringify(user.toObject(), null, 2));
+      console.log('========================');
 
-      // Set new VIP tier
+      // Store old VIP for comparison
+      const oldVip = user.currentVipTier || user.vipTier;
+
+      // Set new VIP tier - use currentVipTier which exists in schema
       if (vipTier === 'none') {
-        user.vipTier = null;
+        user.currentVipTier = null;
+        user.isVip = false;
       } else {
-        user.vipTier = vipTier;
+        user.currentVipTier = vipTier;
+        user.isVip = true;
       }
+
+      // Mark as modified explicitly
+      user.markModified('currentVipTier');
+      user.markModified('isVip');
 
       // Save to database
       await user.save();
+
+      // Verify save worked
+      const verifyUser = await User.findOne({ discordId: targetUser.id });
+      console.log('=== USER DATA AFTER SAVE ===');
+      console.log('Verified user data:', JSON.stringify(verifyUser.toObject(), null, 2));
+      console.log('============================');
 
       // Create success embed
       const embed = new EmbedBuilder()
@@ -81,14 +103,15 @@ export default {
       embed.addFields({
         name: '👑 **VIP Changes**',
         value: `**Old VIP:** ${oldVip ? oldVip.toUpperCase() : 'NONE'}\n` +
-               `**New VIP:** ${user.vipTier ? user.vipTier.toUpperCase() : 'NONE'}\n` +
-               `**Status:** ${user.vipTier ? '✅ VIP Active' : '❌ VIP Removed'}`,
+               `**New VIP:** ${user.currentVipTier ? user.currentVipTier.toUpperCase() : 'NONE'}\n` +
+               `**Is VIP:** ${user.isVip ? '✅ TRUE' : '❌ FALSE'}\n` +
+               `**Status:** ${user.currentVipTier ? '✅ VIP Active' : '❌ VIP Removed'}`,
         inline: true
       });
 
       // Show rod access changes
       const vipHierarchy = { 'bronze': 1, 'silver': 2, 'gold': 3, 'diamond': 4 };
-      const newVipLevel = vipHierarchy[user.vipTier?.toLowerCase()] || 0;
+      const newVipLevel = vipHierarchy[user.currentVipTier?.toLowerCase()] || 0;
       
       let accessInfo = '';
       if (newVipLevel >= 1) {
@@ -110,7 +133,7 @@ export default {
       // Add usage instructions
       embed.addFields({
         name: '💡 **Next Steps**',
-        value: `• User can now use \`/upgrade-rod\` for ${user.vipTier ? 'all levels' : 'levels 1-10'}\n` +
+        value: `• User can now use \`/upgrade-rod\` for ${user.currentVipTier ? 'all levels' : 'levels 1-10'}\n` +
                `• Check access with \`/debug-vip\`\n` +
                `• Browse rods with \`/rod-shop\`\n` +
                `• Changes take effect immediately`,
