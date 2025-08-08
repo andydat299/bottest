@@ -10,6 +10,7 @@
     "cleanup": "node railway-cleanup.js",
     "cleanup-empty": "node cleanup-empty-files.js",
     "clean": "node quick-cleanup.js",
+    "fix": "node fix-conflicts.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

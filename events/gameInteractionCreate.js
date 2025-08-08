@@ -1,4 +1,5 @@
-import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ModalBuilder, TextInputBuilder, TextInputStyle } from 'discord.js';
+// File đã bị xóa để fix conflict với interactionCreate.js
+// Game panel buttons sẽ được handle trong interactionCreate.js
 
 export default {
   name: 'interactionCreate',
