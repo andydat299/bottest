@@ -74,6 +74,14 @@ export default {
           .setTitle('🏆 **MAXIMUM LEVEL REACHED**')
           .setDescription(`**${interaction.user.username}** - Đã đạt cấp độ tối đa!`)
           .setColor(getRodTierColor(currentRod.tier))
+          .addFields({
+            name: '✨ **Current Rod**',
+            value: `**${currentRod.name}**\n` +
+                   `**Level:** ${currentLevel}/20 (MAX)\n` +
+                   `**Benefits:** -${currentRod.missReduction}% miss, +${currentRod.rareBoost}% rare\n` +
+                   `**Tier:** ${currentRod.tier}`,
+            inline: false
+          })
           .setTimestamp();
 
         return await interaction.editReply({ embeds: [embed] });
@@ -85,6 +93,12 @@ export default {
       // Check VIP requirements
       if (nextRod.vipRequired) {
         const userVipTier = user.currentVipTier || user.vipTier || null;
+        
+        console.log('VIP Check:', {
+          user: interaction.user.username,
+          required: nextRod.vipRequired,
+          userVip: userVipTier
+        });
         
         const vipHierarchy = {
           'bronze': 1,
@@ -103,19 +117,29 @@ export default {
             content: `👑 **VIP Required!**\n\n` +
                      `**${nextRod.name}** requires **VIP ${nextRod.vipRequired.toUpperCase()}** or higher.\n\n` +
                      `**Your VIP:** ${userVipTier ? userVipTier.toUpperCase() : 'NONE'}\n` +
-                     `**Required:** VIP ${nextRod.vipRequired.toUpperCase()}`
+                     `**Required:** VIP ${nextRod.vipRequired.toUpperCase()}\n\n` +
+                     `Use \`/force-upgrade-rod level:${upgradeToLevel}\` to bypass VIP check.`
           });
         }
       }
 
       // Check if can afford
       if (!upgradeInfo.canUpgrade) {
-        return await interaction.editReply({
-          content: `💰 **Insufficient Funds!**\n\n` +
-                   `**Cost:** ${nextRod.cost.toLocaleString()} xu\n` +
+        const currentRod = getRodBenefits(currentLevel);
+        const embed = new EmbedBuilder()
+          .setTitle('💰 **INSUFFICIENT FUNDS**')
+          .setDescription(`**${interaction.user.username}** - Không đủ xu để nâng cấp`)
+          .setColor('#e74c3c')
+          .addFields({
+            name: '💸 **Cost Analysis**',
+            value: `**Cost:** ${nextRod.cost.toLocaleString()} xu\n` +
                    `**Your Balance:** ${userBalance.toLocaleString()} xu\n` +
-                   `**Missing:** ${upgradeInfo.missing.toLocaleString()} xu`
-        });
+                   `**Missing:** ${upgradeInfo.missing.toLocaleString()} xu`,
+            inline: false
+          })
+          .setTimestamp();
+
+        return await interaction.editReply({ embeds: [embed] });
       }
 
       // Perform upgrade
@@ -141,6 +165,7 @@ export default {
         .setTitle('🎉 **ROD UPGRADE SUCCESSFUL!**')
         .setDescription(`**${interaction.user.username}** đã nâng cấp cần câu thành công!`)
         .setColor(getRodTierColor(nextRod.tier))
+        .setThumbnail(interaction.user.displayAvatarURL())
         .addFields({
           name: '📈 **Upgrade Summary**',
           value: `${oldRod.name} → **${nextRod.name}**\n` +
@@ -148,7 +173,61 @@ export default {
                  `${oldRod.tier} → **${nextRod.tier}** Tier`,
           inline: false
         })
+        .addFields({
+          name: '⚡ **Performance Improvements**',
+          value: `**Miss Reduction:** ${oldRod.missReduction}% → **${nextRod.missReduction}%** (+${nextRod.missReduction - oldRod.missReduction}%)\n` +
+                 `**Rare Boost:** ${oldRod.rareBoost}% → **${nextRod.rareBoost}%** (+${nextRod.rareBoost - oldRod.rareBoost}%)\n` +
+                 `**Durability:** ${oldRod.durability} → **${nextRod.durability}** (+${nextRod.durability - oldRod.durability})`,
+          inline: false
+        })
+        .addFields({
+          name: '💰 **Transaction Details**',
+          value: `**Cost:** ${nextRod.cost.toLocaleString()} xu\n` +
+                 `**Old Balance:** ${userBalance.toLocaleString()} xu\n` +
+                 `**New Balance:** ${newBalance.toLocaleString()} xu`,
+          inline: true
+        })
+        .addFields({
+          name: '🎣 **New Rod Stats**',
+          value: `**Durability:** ${nextRod.durability}/${nextRod.durability} (100%)\n` +
+                 `**VIP Required:** ${nextRod.vipRequired ? nextRod.vipRequired.toUpperCase() : 'None'}\n` +
+                 `**Description:** ${nextRod.description}`,
+          inline: true
+        })
         .setTimestamp();
+
+      // Add tier-specific messages
+      if (upgradeToLevel === 11) {
+        embed.addFields({
+          name: '🌟 **Premium Tier Unlocked!**',
+          value: 'Chúc mừng! Bạn đã bước vào thế giới cần câu premium!',
+          inline: false
+        });
+      } else if (upgradeToLevel === 16) {
+        embed.addFields({
+          name: '🏆 **Mythical Tier Achieved!**',
+          value: 'Incredible! Bạn đã đạt đến tầm cao mới!',
+          inline: false
+        });
+      } else if (upgradeToLevel === 20) {
+        embed.addFields({
+          name: '✨ **TRANSCENDENT MASTER!**',
+          value: '🎉 **ULTIMATE ACHIEVEMENT UNLOCKED!** 🎉',
+          inline: false
+        });
+      }
+
+      // Add next upgrade info if not at max
+      if (upgradeToLevel < 20) {
+        const nextUpgrade = getRodBenefits(upgradeToLevel + 1);
+        embed.addFields({
+          name: '🔮 **Next Upgrade Available**',
+          value: `**${nextUpgrade.name}** (Level ${upgradeToLevel + 1})\n` +
+                 `**Cost:** ${nextUpgrade.cost.toLocaleString()} xu\n` +
+                 `**Can afford:** ${newBalance >= nextUpgrade.cost ? '✅ Yes' : `❌ Need ${(nextUpgrade.cost - newBalance).toLocaleString()} more xu`}`,
+          inline: false
+        });
+      }
 
       await interaction.editReply({ embeds: [embed] });
 

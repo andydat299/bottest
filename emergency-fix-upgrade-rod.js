@@ -1,4 +1,15 @@
-import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
+#!/usr/bin/env node
+
+/**
+ * Emergency Fix for upgrade-rod.js
+ * Replace completely broken file with working version
+ */
+
+import fs from 'fs';
+
+console.log('🚨 EMERGENCY FIX FOR UPGRADE-ROD\n');
+
+const workingCode = `import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
 import { getRodBenefits, getUpgradeInfo, getRodTierColor } from '../utils/rodManager.js';
 
 export default {
@@ -23,7 +34,7 @@ export default {
       let user = await User.findOne({ discordId: interaction.user.id });
       if (!user) {
         return await interaction.editReply({
-          content: '❌ **Bạn cần có tài khoản trước!**\n\nHãy dùng lệnh `/fish` để tạo tài khoản.'
+          content: '❌ **Bạn cần có tài khoản trước!**\\n\\nHãy dùng lệnh \`/fish\` để tạo tài khoản.'
         });
       }
 
@@ -54,13 +65,13 @@ export default {
         
         if (upgradeToLevel <= currentLevel) {
           return await interaction.editReply({
-            content: `❌ **Không thể nâng cấp!**\n\nBạn đã ở Level ${currentLevel}, không thể nâng cấp xuống Level ${upgradeToLevel}.`
+            content: \`❌ **Không thể nâng cấp!**\\n\\nBạn đã ở Level \${currentLevel}, không thể nâng cấp xuống Level \${upgradeToLevel}.\`
           });
         }
         
         if (upgradeToLevel > currentLevel + 1) {
           return await interaction.editReply({
-            content: `❌ **Không thể bỏ qua level!**\n\nBạn đang ở Level ${currentLevel}, chỉ có thể nâng cấp lên Level ${currentLevel + 1}.\n\nHãy nâng cấp tuần tự: ${currentLevel} → ${currentLevel + 1} → ... → ${upgradeToLevel}`
+            content: \`❌ **Không thể bỏ qua level!**\\n\\nBạn đang ở Level \${currentLevel}, chỉ có thể nâng cấp lên Level \${currentLevel + 1}.\\n\\nHãy nâng cấp tuần tự: \${currentLevel} → \${currentLevel + 1} → ... → \${upgradeToLevel}\`
           });
         }
       } else {
@@ -72,7 +83,7 @@ export default {
         const currentRod = getRodBenefits(currentLevel);
         const embed = new EmbedBuilder()
           .setTitle('🏆 **MAXIMUM LEVEL REACHED**')
-          .setDescription(`**${interaction.user.username}** - Đã đạt cấp độ tối đa!`)
+          .setDescription(\`**\${interaction.user.username}** - Đã đạt cấp độ tối đa!\`)
           .setColor(getRodTierColor(currentRod.tier))
           .setTimestamp();
 
@@ -100,10 +111,10 @@ export default {
 
         if (!hasVipAccess) {
           return await interaction.editReply({
-            content: `👑 **VIP Required!**\n\n` +
-                     `**${nextRod.name}** requires **VIP ${nextRod.vipRequired.toUpperCase()}** or higher.\n\n` +
-                     `**Your VIP:** ${userVipTier ? userVipTier.toUpperCase() : 'NONE'}\n` +
-                     `**Required:** VIP ${nextRod.vipRequired.toUpperCase()}`
+            content: \`👑 **VIP Required!**\\n\\n\` +
+                     \`**\${nextRod.name}** requires **VIP \${nextRod.vipRequired.toUpperCase()}** or higher.\\n\\n\` +
+                     \`**Your VIP:** \${userVipTier ? userVipTier.toUpperCase() : 'NONE'}\\n\` +
+                     \`**Required:** VIP \${nextRod.vipRequired.toUpperCase()}\`
           });
         }
       }
@@ -111,10 +122,10 @@ export default {
       // Check if can afford
       if (!upgradeInfo.canUpgrade) {
         return await interaction.editReply({
-          content: `💰 **Insufficient Funds!**\n\n` +
-                   `**Cost:** ${nextRod.cost.toLocaleString()} xu\n` +
-                   `**Your Balance:** ${userBalance.toLocaleString()} xu\n` +
-                   `**Missing:** ${upgradeInfo.missing.toLocaleString()} xu`
+          content: \`💰 **Insufficient Funds!**\\n\\n\` +
+                   \`**Cost:** \${nextRod.cost.toLocaleString()} xu\\n\` +
+                   \`**Your Balance:** \${userBalance.toLocaleString()} xu\\n\` +
+                   \`**Missing:** \${upgradeInfo.missing.toLocaleString()} xu\`
         });
       }
 
@@ -139,13 +150,13 @@ export default {
       // Create success embed
       const embed = new EmbedBuilder()
         .setTitle('🎉 **ROD UPGRADE SUCCESSFUL!**')
-        .setDescription(`**${interaction.user.username}** đã nâng cấp cần câu thành công!`)
+        .setDescription(\`**\${interaction.user.username}** đã nâng cấp cần câu thành công!\`)
         .setColor(getRodTierColor(nextRod.tier))
         .addFields({
           name: '📈 **Upgrade Summary**',
-          value: `${oldRod.name} → **${nextRod.name}**\n` +
-                 `Level ${currentLevel} → **Level ${upgradeToLevel}**\n` +
-                 `${oldRod.tier} → **${nextRod.tier}** Tier`,
+          value: \`\${oldRod.name} → **\${nextRod.name}**\\n\` +
+                 \`Level \${currentLevel} → **Level \${upgradeToLevel}**\\n\` +
+                 \`\${oldRod.tier} → **\${nextRod.tier}** Tier\`,
           inline: false
         })
         .setTimestamp();
@@ -156,8 +167,33 @@ export default {
       console.error('❌ Upgrade rod command error:', error);
       
       await interaction.editReply({
-        content: `❌ **Có lỗi khi nâng cấp cần câu:**\n\`\`\`${error.message}\`\`\``
+        content: \`❌ **Có lỗi khi nâng cấp cần câu:**\\n\\\`\\\`\\\`\${error.message}\\\`\\\`\\\`\`
       });
     }
   }
-};
+};`;
+
+try {
+  // Backup broken file
+  const backupName = `./commands/upgrade-rod-broken-${Date.now()}.js`;
+  if (fs.existsSync('./commands/upgrade-rod.js')) {
+    fs.copyFileSync('./commands/upgrade-rod.js', backupName);
+    console.log(`📋 Backed up broken file to: ${backupName}`);
+  }
+
+  // Write working code
+  fs.writeFileSync('./commands/upgrade-rod.js', workingCode);
+  console.log('✅ Replaced upgrade-rod.js with WORKING version');
+
+  console.log('\n🎉 EMERGENCY FIX COMPLETED!');
+  console.log('🚀 Restart your bot NOW');
+  console.log('🎣 /upgrade-rod should work properly');
+
+} catch (error) {
+  console.error('❌ Emergency fix failed:', error.message);
+  console.log('\n💡 Manual steps:');
+  console.log('1. Delete commands/upgrade-rod.js');
+  console.log('2. Use /upgrade-rod-fixed command instead');
+}
+
+console.log('\n✅ Emergency fix script completed!');
