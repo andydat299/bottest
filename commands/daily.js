@@ -151,7 +151,6 @@ export default {
       dailyReward.lastClaimDate = now;
       dailyReward.totalClaims += 1;
       dailyReward.totalRewards += totalReward;
-      dailyReward.wheelSpinUsed = false; // Reset daily wheel spin
       dailyReward.username = interaction.user.username; // Update username
       await dailyReward.save();
 
