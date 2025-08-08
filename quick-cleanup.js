@@ -8,9 +8,39 @@ import { dirname } from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-console.log('🚀 Quick cleanup - removing completely empty files...');
+console.log('🚀 Quick cleanup - removing debug/test files and empty files...');
 
 let deleted = 0;
+
+// Files to remove (debug/test commands)
+const filesToRemove = [
+  'commands/debug-daily-system.js',
+  'commands/fix-daily-system.js', 
+  'commands/validate-daily-logic.js',
+  'commands/test-daily-luck.js',
+  'commands/test-user-notifications.js',
+  'commands/bot-health-check.js',
+  'commands/debug-bot-startup.js',
+  'commands/test-qr.js',
+  'commands/debug-qr-generation.js'
+];
+
+// Remove specific debug files
+for (const file of filesToRemove) {
+  const filePath = join(__dirname, file);
+  try {
+    if (statSync(filePath).isFile()) {
+      const content = readFileSync(filePath, 'utf-8');
+      if (content.includes('// File đã bị xóa để làm nhẹ code') || content.trim().length < 100) {
+        unlinkSync(filePath);
+        console.log(`🗑️  Removed debug file: ${file}`);
+        deleted++;
+      }
+    }
+  } catch (error) {
+    // File doesn't exist, skip
+  }
+}
 
 function quickCleanDirectory(dirPath) {
   try {
@@ -24,10 +54,11 @@ function quickCleanDirectory(dirPath) {
         try {
           const content = readFileSync(itemPath, 'utf-8');
           
-          // Only delete completely empty files (0 bytes or only whitespace)
-          if (content.trim().length === 0) {
+          // Remove files that are just comments or empty
+          if (content.trim().length === 0 || 
+              (content.includes('// File đã bị xóa') && content.trim().length < 100)) {
             unlinkSync(itemPath);
-            console.log(`🗑️  Deleted empty file: ${itemPath}`);
+            console.log(`🗑️  Deleted empty/stub file: ${itemPath}`);
             deleted++;
           }
         } catch (readError) {
@@ -63,13 +94,14 @@ try {
   const rootItems = readdirSync(__dirname);
   
   for (const item of rootItems) {
-    if (item.endsWith('.js')) {
+    if (item.endsWith('.js') && item !== 'quick-cleanup.js' && item !== 'index.js') {
       const itemPath = join(__dirname, item);
       
       try {
         const content = readFileSync(itemPath, 'utf-8');
         
-        if (content.trim().length === 0) {
+        if (content.trim().length === 0 || 
+            (content.includes('// File đã bị xóa') && content.trim().length < 100)) {
           unlinkSync(itemPath);
           console.log(`🗑️  Deleted empty root file: ${itemPath}`);
           deleted++;
@@ -83,8 +115,24 @@ try {
   console.error('❌ Error cleaning root:', error.message);
 }
 
-console.log(`\n✅ Quick cleanup completed! Deleted ${deleted} completely empty files.`);
+console.log(`\n✅ Cleanup completed! Deleted ${deleted} debug/empty files.`);
 
 if (deleted === 0) {
-  console.log('✨ No empty files found!');
+  console.log('✨ No files to clean!');
+} else {
+  console.log('🎯 Code is now lighter and cleaner!');
+}
+
+// List remaining important files
+console.log('\n📋 Core commands remaining:');
+try {
+  const commands = readdirSync(join(__dirname, 'commands')).filter(f => f.endsWith('.js'));
+  const coreCommands = commands.filter(f => !f.includes('debug') && !f.includes('test'));
+  console.log(`📂 commands: ${coreCommands.length} files`);
+  coreCommands.slice(0, 10).forEach(f => console.log(`   - ${f}`));
+  if (coreCommands.length > 10) {
+    console.log(`   ... and ${coreCommands.length - 10} more`);
+  }
+} catch (error) {
+  console.log('📂 commands: directory not accessible');
 }
