@@ -128,3 +128,19 @@ try {
   console.error('❌ Discord login failed:', error);
   process.exit(1);
 }
+
+// Initialize auto-fishing background jobs
+async function initializeAutoFishingJobs() {
+  try {
+    const { AutoFishing } = await import('./schemas/autoFishingSchema.js');
+    const { User } = await import('./schemas/userSchema.js');
+    const { VIP } = await import('./schemas/vipSchema.js');
+    const { initializeAutoFishingJobs: initJobs } = await import('./utils/autoFishingJobs.js');
+    
+    initJobs({ AutoFishing, User, VIP });
+  } catch (error) {
+    console.error('❌ Failed to initialize auto-fishing jobs:', error);
+  }
+}
+
+initializeAutoFishingJobs();

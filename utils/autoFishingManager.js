@@ -125,9 +125,30 @@ export function calculateAutoFishingResults(durationMinutes, vipBenefits, settin
  */
 export async function startAutoFishingSession(AutoFishing, VIP, userId, durationMinutes) {
   try {
-    // Get user's VIP status
-    const { getUserVipStatus } = await import('./vipManager.js');
-    const vipStatus = await getUserVipStatus(VIP, userId);
+    // Get user's VIP status - import directly to avoid circular import
+    const { VIP_TIERS } = await import('./vipManager.js');
+    
+    const vipRecord = await VIP.findOne({ userId, isActive: true });
+    let vipStatus = {
+      isVip: false,
+      tier: 'none',
+      benefits: {
+        fishingMissReduction: 0,
+        rareFishBoost: 0,
+        dailyBonus: 0,
+        casinoWinBoost: 0,
+        cooldownReduction: 0,
+        shopDiscount: 0
+      }
+    };
+
+    if (vipRecord && (!vipRecord.expiresAt || new Date() <= vipRecord.expiresAt)) {
+      vipStatus = {
+        isVip: true,
+        tier: vipRecord.currentTier,
+        benefits: vipRecord.benefits
+      };
+    }
     
     if (!vipStatus.isVip) {
       return {
@@ -233,12 +254,19 @@ export async function stopAutoFishingSession(AutoFishing, User, VIP, userId) {
     const durationMs = actualEndTime - autoFishing.sessionStartTime;
     const durationMinutes = Math.floor(durationMs / (1000 * 60));
 
-    // Get VIP benefits
-    const { getUserVipStatus } = await import('./vipManager.js');
-    const vipStatus = await getUserVipStatus(VIP, userId);
+    // Get VIP benefits - direct VIP record access
+    const vipRecord = await VIP.findOne({ userId, isActive: true });
+    let vipBenefits = {
+      fishingMissReduction: 0,
+      rareFishBoost: 0
+    };
+
+    if (vipRecord && (!vipRecord.expiresAt || new Date() <= vipRecord.expiresAt)) {
+      vipBenefits = vipRecord.benefits;
+    }
 
     // Calculate fishing results
-    const results = calculateAutoFishingResults(durationMinutes, vipStatus.benefits);
+    const results = calculateAutoFishingResults(durationMinutes, vipBenefits);
 
     // Update user balance
     const user = await User.findOne({ discordId: userId });
@@ -258,7 +286,7 @@ export async function stopAutoFishingSession(AutoFishing, User, VIP, userId) {
       duration: durationMinutes,
       fishCaught: results.fishCaught,
       xuEarned: results.totalXu,
-      vipTier: vipStatus.tier
+      vipTier: vipRecord ? vipRecord.currentTier : 'none'
     });
 
     await autoFishing.save();
@@ -320,9 +348,15 @@ export async function processExpiredAutoFishingSessions(AutoFishing, User, VIP) 
  */
 export async function getAutoFishingStatus(AutoFishing, VIP, userId) {
   try {
-    const { getUserVipStatus } = await import('./vipManager.js');
-    const vipStatus = await getUserVipStatus(VIP, userId);
-    const limits = getAutoFishingLimits(vipStatus.tier);
+    // Get VIP status directly
+    const vipRecord = await VIP.findOne({ userId, isActive: true });
+    let vipTier = 'none';
+    
+    if (vipRecord && (!vipRecord.expiresAt || new Date() <= vipRecord.expiresAt)) {
+      vipTier = vipRecord.currentTier;
+    }
+    
+    const limits = getAutoFishingLimits(vipTier);
 
     let autoFishing = await AutoFishing.findOne({ userId });
     if (!autoFishing) {
@@ -345,7 +379,7 @@ export async function getAutoFishingStatus(AutoFishing, VIP, userId) {
     }
 
     return {
-      vipTier: vipStatus.tier,
+      vipTier: vipTier,
       limits: limits,
       isActive: autoFishing.isActive,
       sessionStartTime: autoFishing.sessionStartTime,

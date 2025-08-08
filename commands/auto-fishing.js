@@ -88,7 +88,7 @@ async function handleStart(interaction, AutoFishing, VIP) {
       { name: '💡 Lưu ý', value: '• Dùng `/auto-fishing stop` để dừng sớm\n• Dùng `/auto-fishing status` để xem tiến độ\n• Phần thưởng sẽ được tự động thêm vào tài khoản', inline: false }
     )
     .setColor('#00ff00')
-    .setThumbnail('🤖')
+    .setThumbnail(interaction.user.displayAvatarURL())
     .setTimestamp();
 
   await interaction.editReply({ embeds: [embed] });

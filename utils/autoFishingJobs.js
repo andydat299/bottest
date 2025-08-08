@@ -2,7 +2,8 @@
  * Background Jobs for Auto-Fishing System
  */
 
-import cron from 'node-cron';
+// Remove cron import since it might not be installed
+// import cron from 'node-cron';
 
 let autoFishingJobRunning = false;
 
@@ -13,8 +14,9 @@ let autoFishingJobRunning = false;
 export function initializeAutoFishingJobs(models) {
   const { AutoFishing, User, VIP } = models;
 
+  // Use setInterval instead of cron for now
   // Run every 5 minutes to check for expired sessions
-  cron.schedule('*/5 * * * *', async () => {
+  setInterval(async () => {
     if (autoFishingJobRunning) return;
     
     try {
@@ -31,40 +33,43 @@ export function initializeAutoFishingJobs(models) {
     } finally {
       autoFishingJobRunning = false;
     }
-  });
+  }, 5 * 60 * 1000); // 5 minutes
 
-  // Reset daily limits at midnight
-  cron.schedule('0 0 * * *', async () => {
-    try {
-      const { getAutoFishingLimits } = await import('./autoFishingManager.js');
-      
-      // Get all VIP users
-      const vipUsers = await VIP.find({ isActive: true });
-      let resetCount = 0;
-
-      for (const vipUser of vipUsers) {
-        const limits = getAutoFishingLimits(vipUser.currentTier);
+  // Reset daily limits at midnight (00:00)
+  setInterval(async () => {
+    const now = new Date();
+    if (now.getHours() === 0 && now.getMinutes() === 0) {
+      try {
+        const { getAutoFishingLimits } = await import('./autoFishingManager.js');
         
-        if (limits.enabled) {
-          await AutoFishing.updateOne(
-            { userId: vipUser.userId },
-            { 
-              $set: { 
-                remainingTimeToday: limits.dailyMinutes,
-                lastResetDate: new Date()
-              }
-            },
-            { upsert: true }
-          );
-          resetCount++;
-        }
-      }
+        // Get all VIP users
+        const vipUsers = await VIP.find({ isActive: true });
+        let resetCount = 0;
 
-      console.log(`🕛 Reset auto-fishing limits for ${resetCount} VIP users`);
-    } catch (error) {
-      console.error('❌ Auto-fishing daily reset error:', error);
+        for (const vipUser of vipUsers) {
+          const limits = getAutoFishingLimits(vipUser.currentTier);
+          
+          if (limits.enabled) {
+            await AutoFishing.updateOne(
+              { userId: vipUser.userId },
+              { 
+                $set: { 
+                  remainingTimeToday: limits.dailyMinutes,
+                  lastResetDate: new Date()
+                }
+              },
+              { upsert: true }
+            );
+            resetCount++;
+          }
+        }
+
+        console.log(`🕛 Reset auto-fishing limits for ${resetCount} VIP users`);
+      } catch (error) {
+        console.error('❌ Auto-fishing daily reset error:', error);
+      }
     }
-  });
+  }, 60 * 1000); // Check every minute
 
   console.log('🤖 Auto-fishing background jobs initialized');
 }
