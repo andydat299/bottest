@@ -104,11 +104,42 @@ export default {
       const nextRod = getRodBenefits(upgradeToLevel);
       const upgradeInfo = getUpgradeInfo(currentLevel, userBalance);
 
-      // Check VIP requirements
+      // Check VIP requirements with extensive debugging
       if (nextRod.vipRequired) {
         const userVipTier = user.vipTier || null;
         
-        // VIP hierarchy check - more comprehensive
+        // Debug logging
+        console.log('=== VIP DEBUG START ===');
+        console.log('User ID:', interaction.user.id);
+        console.log('User object VIP fields:', {
+          vipTier: user.vipTier,
+          vipLevel: user.vipLevel,
+          vip: user.vip,
+          premium: user.premium,
+          subscription: user.subscription
+        });
+        console.log('Required VIP:', nextRod.vipRequired);
+        console.log('=== VIP DEBUG END ===');
+        
+        // Check multiple possible VIP field names
+        const possibleVipValues = [
+          user.vipTier,
+          user.vipLevel, 
+          user.vip,
+          user.premium,
+          user.subscription
+        ].filter(Boolean);
+        
+        console.log('Possible VIP values found:', possibleVipValues);
+        
+        // Use the first valid VIP value found
+        const detectedVip = possibleVipValues.find(vip => 
+          ['bronze', 'silver', 'gold', 'diamond'].includes(String(vip).toLowerCase())
+        );
+        
+        const finalVipTier = detectedVip || userVipTier;
+        
+        // VIP hierarchy check
         const vipHierarchy = {
           'bronze': 1,
           'silver': 2, 
@@ -117,14 +148,21 @@ export default {
         };
         
         const requiredVipLevel = vipHierarchy[nextRod.vipRequired.toLowerCase()] || 0;
-        const userVipLevel = vipHierarchy[userVipTier?.toLowerCase()] || 0;
+        const userVipLevel = vipHierarchy[String(finalVipTier).toLowerCase()] || 0;
         
         const hasVipAccess = userVipLevel >= requiredVipLevel;
 
+        console.log('VIP Calculation:', {
+          finalVipTier,
+          userVipLevel,
+          requiredVipLevel,
+          hasVipAccess
+        });
+
         if (!hasVipAccess) {
           const embed = new EmbedBuilder()
-            .setTitle('👑 **VIP REQUIRED**')
-            .setDescription(`**${interaction.user.username}** - Cần VIP để nâng cấp!`)
+            .setTitle('👑 **VIP ACCESS ISSUE**')
+            .setDescription(`**${interaction.user.username}** - VIP Detection Problem`)
             .setColor('#e74c3c')
             .addFields({
               name: '🎣 **Next Rod**',
@@ -134,27 +172,33 @@ export default {
               inline: true
             })
             .addFields({
-              name: '👑 **VIP Requirements**',
-              value: `**Required:** VIP ${nextRod.vipRequired.toUpperCase()} or higher\n` +
-                     `**Your VIP:** ${userVipTier ? userVipTier.toUpperCase() : 'NONE'}\n` +
-                     `**Status:** ${hasVipAccess ? '✅ Access Granted' : '❌ Insufficient VIP'}`,
+              name: '👑 **VIP Debug Info**',
+              value: `**Required:** VIP ${nextRod.vipRequired.toUpperCase()}\n` +
+                     `**Database VIP:** ${user.vipTier || 'null'}\n` +
+                     `**Detected VIP:** ${finalVipTier || 'none'}\n` +
+                     `**VIP Level:** ${userVipLevel}\n` +
+                     `**Access:** ${hasVipAccess ? '✅' : '❌'}`,
               inline: true
             })
             .addFields({
-              name: '💡 **How to Get VIP**',
-              value: '• Purchase VIP Bronze to unlock premium rods\n' +
-                     '• VIP Bronze unlocks all rods (Levels 11-20)\n' +
-                     '• Higher VIP tiers include additional benefits\n' +
-                     '• Contact administrators for VIP upgrade',
+              name: '� **All VIP Fields Found**',
+              value: possibleVipValues.length > 0 ? 
+                     possibleVipValues.map(v => `\`${v}\``).join(', ') : 
+                     'No VIP fields detected',
+              inline: false
+            })
+            .addFields({
+              name: '🛠️ **Troubleshooting**',
+              value: '• Run `/debug-vip` for full diagnosis\n' +
+                     '• Contact admin if VIP not detected\n' +
+                     '• Check database field names\n' +
+                     '• Verify VIP assignment process',
               inline: false
             })
             .setTimestamp();
 
           return await interaction.editReply({ embeds: [embed] });
         }
-        
-        // Debug log for VIP checking
-        console.log(`VIP Check - User: ${userVipTier}, Required: ${nextRod.vipRequired}, Access: ${hasVipAccess}`);
       }
 
       // Check if can afford

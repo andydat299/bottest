@@ -31,14 +31,44 @@ export default {
         .setColor('#3498db')
         .setTimestamp();
 
-      // User VIP info
+      // User VIP info with comprehensive field checking
+      const allVipFields = {
+        vipTier: user.vipTier,
+        vipLevel: user.vipLevel,
+        vip: user.vip,
+        premium: user.premium,
+        subscription: user.subscription,
+        tier: user.tier,
+        rank: user.rank,
+        status: user.status
+      };
+
+      // Filter out null/undefined values
+      const existingVipFields = Object.entries(allVipFields)
+        .filter(([key, value]) => value !== null && value !== undefined)
+        .map(([key, value]) => `${key}: ${JSON.stringify(value)}`)
+        .join('\n');
+
+      // Detect actual VIP value
+      const possibleVipValues = Object.values(allVipFields).filter(Boolean);
+      const detectedVip = possibleVipValues.find(vip => 
+        ['bronze', 'silver', 'gold', 'diamond'].includes(String(vip).toLowerCase())
+      );
+
+      const userVipTier = detectedVip || user.vipTier || null;
+
       embed.addFields({
         name: '👑 **VIP Status**',
-        value: `**VIP Tier:** ${userVipTier ? userVipTier.toUpperCase() : 'NONE'}\n` +
-               `**VIP in Database:** \`${JSON.stringify(user.vipTier)}\`\n` +
-               `**VIP Type:** ${typeof user.vipTier}\n` +
+        value: `**Primary VIP Tier:** ${userVipTier ? userVipTier.toUpperCase() : 'NONE'}\n` +
+               `**Detected VIP:** ${detectedVip ? detectedVip.toUpperCase() : 'NONE'}\n` +
                `**Balance:** ${userBalance.toLocaleString()} xu\n` +
                `**Current Rod Level:** ${currentRodLevel}`,
+        inline: false
+      });
+
+      embed.addFields({
+        name: '🔍 **All VIP Fields in Database**',
+        value: existingVipFields || 'No VIP fields found',
         inline: false
       });
 
