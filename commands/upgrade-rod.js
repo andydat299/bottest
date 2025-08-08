@@ -110,18 +110,12 @@ export default {
         const userVipTier = user.currentVipTier || user.vipTier || null;
         
         // Debug logging
-        console.log('=== VIP DEBUG START ===');
-        console.log('User ID:', interaction.user.id);
-        console.log('User VIP fields:', {
-          currentVipTier: user.currentVipTier,
-          isVip: user.isVip,
-          vipTier: user.vipTier
-        });
+        console.log('=== VIP CHECK ===');
+        console.log('User:', interaction.user.username);
         console.log('Required VIP:', nextRod.vipRequired);
-        console.log('Final VIP Tier:', userVipTier);
-        console.log('=== VIP DEBUG END ===');
+        console.log('User VIP:', userVipTier);
         
-        // VIP hierarchy check
+        // Simple VIP hierarchy check
         const vipHierarchy = {
           'bronze': 1,
           'silver': 2, 
@@ -130,50 +124,21 @@ export default {
         };
         
         const requiredVipLevel = vipHierarchy[nextRod.vipRequired.toLowerCase()] || 0;
-        const userVipLevel = vipHierarchy[String(userVipTier).toLowerCase()] || 0;
+        const userVipLevel = vipHierarchy[String(userVipTier || '').toLowerCase()] || 0;
         
         const hasVipAccess = userVipLevel >= requiredVipLevel;
-
-        console.log('VIP Calculation:', {
-          userVipTier,
-          userVipLevel,
-          requiredVipLevel,
-          hasVipAccess
-        });
+        
+        console.log('VIP Levels:', { userVipLevel, requiredVipLevel, hasVipAccess });
+        console.log('================');
 
         if (!hasVipAccess) {
-          const embed = new EmbedBuilder()
-            .setTitle('👑 **VIP ACCESS ISSUE**')
-            .setDescription(`**${interaction.user.username}** - VIP Detection Problem`)
-            .setColor('#e74c3c')
-            .addFields({
-              name: '🎣 **Next Rod**',
-              value: `**${nextRod.name}**\n` +
-                     `Level ${upgradeToLevel}/20\n` +
-                     `Tier: ${nextRod.tier}`,
-              inline: true
-            })
-            .addFields({
-              name: '👑 **VIP Debug Info**',
-              value: `**Required:** VIP ${nextRod.vipRequired.toUpperCase()}\n` +
-                     `**Current VIP Tier:** ${user.currentVipTier || 'null'}\n` +
-                     `**Is VIP:** ${user.isVip || false}\n` +
-                     `**Final VIP:** ${userVipTier || 'none'}\n` +
-                     `**VIP Level:** ${userVipLevel}\n` +
-                     `**Access:** ${hasVipAccess ? '✅' : '❌'}`,
-              inline: true
-            })
-            .addFields({
-              name: '🛠️ **How to Fix**',
-              value: '• Your VIP may not be set in database\n' +
-                     '• Use `/debug-vip` for detailed diagnosis\n' +
-                     '• Contact admin to set currentVipTier field\n' +
-                     '• Try `/force-upgrade-rod` for testing',
-              inline: false
-            })
-            .setTimestamp();
-
-          return await interaction.editReply({ embeds: [embed] });
+          return await interaction.editReply({
+            content: `👑 **VIP Required!**\n\n` +
+                     `**${nextRod.name}** requires **VIP ${nextRod.vipRequired.toUpperCase()}** or higher.\n\n` +
+                     `**Your VIP:** ${userVipTier ? userVipTier.toUpperCase() : 'NONE'}\n` +
+                     `**Required:** VIP ${nextRod.vipRequired.toUpperCase()}\n\n` +
+                     `Use \`/force-upgrade-rod level:${upgradeToLevel}\` to bypass VIP check.`
+          });
         }
       } with extensive debugging
       if (nextRod.vipRequired) {
