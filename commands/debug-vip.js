@@ -21,7 +21,7 @@ export default {
         });
       }
 
-      const userVipTier = user.vipTier || null;
+      const userVipTier = user.currentVipTier || user.vipTier || null;  // Use currentVipTier first
       const userBalance = user.balance || 0;
       const currentRodLevel = user.rodLevel || 1;
 
@@ -168,9 +168,21 @@ export default {
           name: '❌ **VIP Issue Detected**',
           value: 'VIP tier không được nhận diện.\n' +
                  'Recommended actions:\n' +
-                 '• Contact admin để set VIP\n' +
-                 '• Check database field spelling\n' +
-                 '• Verify VIP assignment process',
+                 '• Use `/force-upgrade-rod` to bypass VIP\n' +
+                 '• Manual VIP set needed in database\n' +
+                 '• Restart bot after VIP changes\n' +
+                 '• Try setting currentVipTier manually',
+          inline: false
+        });
+
+        // Add manual VIP setting instructions
+        embed.addFields({
+          name: '🛠️ **Manual VIP Fix**',
+          value: 'Since `/set-vip` not loaded, use these options:\n' +
+                 '1. Use `/force-upgrade-rod level:11` to bypass VIP\n' +
+                 '2. Ask admin to manually set currentVipTier in database\n' +
+                 '3. Restart bot to load `/set-vip` command\n' +
+                 '4. Database update: `currentVipTier: "diamond", isVip: true`',
           inline: false
         });
       }
