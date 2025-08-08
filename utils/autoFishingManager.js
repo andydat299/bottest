@@ -26,7 +26,7 @@ export function getAutoFishingLimits(vipTier) {
  * @param {Object} settings - Auto-fishing settings
  * @returns {Object} Fishing results
  */
-export function calculateAutoFishingResults(durationMinutes, vipBenefits, settings = {}) {
+export async function calculateAutoFishingResults(durationMinutes, vipBenefits, settings = {}) {
   const results = {
     totalAttempts: 0,
     fishCaught: 0,
@@ -45,14 +45,8 @@ export function calculateAutoFishingResults(durationMinutes, vipBenefits, settin
   const baseMissRate = 15; // 15% base miss rate
   const actualMissRate = Math.max(0, baseMissRate - (vipBenefits.fishingMissReduction || 0));
 
-  // Fish types with probabilities
-  const fishTypes = [
-    { name: 'Cá Nhỏ', value: 50, probability: 0.5, emoji: '🐟' },
-    { name: 'Cá Vừa', value: 100, probability: 0.3, emoji: '🐠' },
-    { name: 'Cá Lớn', value: 200, probability: 0.15, emoji: '🐡' },
-    { name: 'Cá Hiếm', value: 500, probability: 0.04, emoji: '🦈' },
-    { name: 'Cá Huyền Thoại', value: 1000, probability: 0.01, emoji: '🐋' }
-  ];
+  // Import fish types from existing system
+  const { fishTypes, totalWeight } = await import('./fishTypes.js');
 
   // Apply VIP rare fish boost
   const rareFishBoost = (vipBenefits.rareFishBoost || 0) / 100;
@@ -63,45 +57,44 @@ export function calculateAutoFishingResults(durationMinutes, vipBenefits, settin
       // Successful fishing attempt
       results.fishCaught++;
 
-      // Determine fish type
-      let fishCaught = null;
-      const rand = Math.random();
-      let cumulativeProbability = 0;
+      // Use the same weighted random system as manual fishing
+      let randomValue = Math.random() * totalWeight;
+      let selectedFish = null;
 
       for (const fish of fishTypes) {
-        let adjustedProbability = fish.probability;
+        let adjustedWeight = fish.weight;
         
-        // Boost rare fish (epic and legendary)
-        if (fish.value >= 500) {
-          adjustedProbability *= (1 + rareFishBoost);
+        // Boost rare fish (legendary and mythical) for VIP
+        if (fish.rarity === 'legendary' || fish.rarity === 'mythical') {
+          adjustedWeight *= (1 + rareFishBoost);
         }
 
-        cumulativeProbability += adjustedProbability;
-        
-        if (rand <= cumulativeProbability) {
-          fishCaught = fish;
+        if (randomValue <= adjustedWeight) {
+          selectedFish = fish;
           break;
         }
+        randomValue -= adjustedWeight;
       }
 
-      // Fallback to common fish
-      if (!fishCaught) {
-        fishCaught = fishTypes[0];
+      // Fallback to first fish if none selected
+      if (!selectedFish) {
+        selectedFish = fishTypes[0];
       }
 
-      // Add to results
-      results.totalXu += fishCaught.value;
+      // Add to results using price instead of value
+      results.totalXu += selectedFish.price;
       
-      if (!results.fishByType[fishCaught.name]) {
-        results.fishByType[fishCaught.name] = {
+      if (!results.fishByType[selectedFish.name]) {
+        results.fishByType[selectedFish.name] = {
           count: 0,
           totalValue: 0,
-          emoji: fishCaught.emoji
+          emoji: getFishEmoji(selectedFish.rarity),
+          rarity: selectedFish.rarity
         };
       }
       
-      results.fishByType[fishCaught.name].count++;
-      results.fishByType[fishCaught.name].totalValue += fishCaught.value;
+      results.fishByType[selectedFish.name].count++;
+      results.fishByType[selectedFish.name].totalValue += selectedFish.price;
     } else {
       // Missed attempt
       results.fishMissed++;
@@ -113,6 +106,36 @@ export function calculateAutoFishingResults(durationMinutes, vipBenefits, settin
     (results.fishCaught / results.totalAttempts * 100) : 0;
 
   return results;
+}
+
+/**
+ * Get fish emoji based on rarity (matching fishing system)
+ * @param {string} rarity - Fish rarity
+ * @returns {string} Emoji
+ */
+function getFishEmoji(rarity) {
+  const emojis = {
+    common: '🐟',
+    rare: '🐠', 
+    legendary: '🦈',
+    mythical: '🐋'
+  };
+  return emojis[rarity] || '🐟';
+}
+
+/**
+ * Get rarity Vietnamese name
+ * @param {string} rarity - Fish rarity
+ * @returns {string} Vietnamese name
+ */
+function getRarityVietnamese(rarity) {
+  const vietnamese = {
+    common: 'Thường',
+    rare: 'Hiếm',
+    legendary: 'Huyền Thoại', 
+    mythical: 'Thần Thoại'
+  };
+  return vietnamese[rarity] || rarity;
 }
 
 /**
@@ -266,7 +289,7 @@ export async function stopAutoFishingSession(AutoFishing, User, VIP, userId) {
     }
 
     // Calculate fishing results
-    const results = calculateAutoFishingResults(durationMinutes, vipBenefits);
+    const results = await calculateAutoFishingResults(durationMinutes, vipBenefits);
 
     // Update user balance
     const user = await User.findOne({ discordId: userId });

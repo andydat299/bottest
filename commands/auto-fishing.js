@@ -106,9 +106,21 @@ async function handleStop(interaction, AutoFishing, User, VIP) {
 
   const fishingResults = result.results;
   
-  // Create fish summary
+  // Create fish summary with rarity information
   const fishSummary = Object.entries(fishingResults.fishByType)
-    .map(([fishName, data]) => `${data.emoji} **${fishName}**: ${data.count} con (${data.totalValue.toLocaleString()} xu)`)
+    .sort((a, b) => {
+      // Sort by rarity first (rare fish first), then by count
+      const rarityOrder = { mythical: 0, legendary: 1, rare: 2, common: 3 };
+      const rarityDiff = (rarityOrder[a[1].rarity] || 99) - (rarityOrder[b[1].rarity] || 99);
+      if (rarityDiff !== 0) return rarityDiff;
+      return b[1].count - a[1].count;
+    })
+    .map(([fishName, data]) => {
+      const rarityEmoji = data.rarity === 'mythical' ? '✨' : 
+                         data.rarity === 'legendary' ? '⭐' :
+                         data.rarity === 'rare' ? '🌟' : '';
+      return `${data.emoji} **${fishName}** ${rarityEmoji}: ${data.count} con (${data.totalValue.toLocaleString()} xu)`;
+    })
     .join('\n') || 'Không có cá nào';
 
   const embed = new EmbedBuilder()
@@ -147,6 +159,34 @@ async function handleStop(interaction, AutoFishing, User, VIP) {
     value: performanceRating,
     inline: false
   });
+
+  // Add rarity breakdown if multiple fish caught
+  if (fishingResults.fishCaught > 5) {
+    const rarityBreakdown = {};
+    for (const [fishName, data] of Object.entries(fishingResults.fishByType)) {
+      rarityBreakdown[data.rarity] = (rarityBreakdown[data.rarity] || 0) + data.count;
+    }
+
+    const rarityText = Object.entries(rarityBreakdown)
+      .map(([rarity, count]) => {
+        const emoji = rarity === 'mythical' ? '🐋' : 
+                     rarity === 'legendary' ? '🦈' :
+                     rarity === 'rare' ? '🐠' : '🐟';
+        const name = rarity === 'mythical' ? 'Thần Thoại' :
+                    rarity === 'legendary' ? 'Huyền Thoại' :
+                    rarity === 'rare' ? 'Hiếm' : 'Thường';
+        return `${emoji} ${name}: ${count}`;
+      })
+      .join('\n');
+
+    if (rarityText) {
+      embed.addFields({
+        name: '🌟 Phân Loại Theo Độ Hiếm',
+        value: rarityText,
+        inline: true
+      });
+    }
+  }
 
   await interaction.editReply({ embeds: [embed] });
 }
