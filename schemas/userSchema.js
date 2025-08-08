@@ -37,6 +37,15 @@ const userSchema = new mongoose.Schema({
     blackjackWinnings: { type: Number, default: 0 }, // Tổng thắng/thua blackjack
     wheelGames: { type: Number, default: 0 },        // Số lần chơi vòng quay
     wheelWinnings: { type: Number, default: 0 }      // Tổng thắng/thua vòng quay
+  },
+  // Custom fishing settings
+  customFishMissRate: {
+    rate: { type: Number, min: 0, max: 100 }, // 0-100%
+    setBy: { type: String }, // Admin user ID
+    setAt: { type: Date, default: Date.now },
+    expiresAt: { type: Date, default: null }, // null = permanent
+    reason: { type: String, default: 'Admin adjustment' },
+    isActive: { type: Boolean, default: true }
   }
 });
 

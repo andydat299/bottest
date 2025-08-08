@@ -1,6 +1,4 @@
-#!/usr/bin/env node
-
-import { readdirSync, statSync, unlinkSync, readFileSync } from 'fs';
+// Đã được thay thế bằng instant-cleanup.js
 import { join } from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
