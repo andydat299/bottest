@@ -24,11 +24,21 @@ export default {
     const successRate = totalAttempts > 0 ? ((successfulCatches / totalAttempts) * 100).toFixed(1) : '0.0';
     const missRate = totalAttempts > 0 ? ((missedCatches / totalAttempts) * 100).toFixed(1) : '0.0';
 
-    // Tính tỷ lệ câu hụt hiện tại
-    const baseMissRate = 0.20;
+    // Tính tỷ lệ câu hụt hiện tại với 20 levels
+    const baseMissRate = 0.20; // 20% base miss rate
     const rodLevel = user.rodLevel || 1;
-    const missRateReduction = (rodLevel - 1) * 0.02;
-    const currentMissRate = Math.max(baseMissRate - missRateReduction, 0.05);
+    
+    // Rod miss rate reduction system (1-20 levels)
+    let missRateReduction = 0;
+    if (rodLevel <= 10) {
+      // Level 1-10: 2% reduction per level
+      missRateReduction = (rodLevel - 1) * 0.02;
+    } else {
+      // Level 11-20: Additional 1% reduction per level beyond 10
+      missRateReduction = 0.18 + ((rodLevel - 10) * 0.01); // 18% from first 10 + extra from 11-20
+    }
+    
+    const currentMissRate = Math.max(baseMissRate - missRateReduction, 0.01); // Min 1% miss rate
     const currentMissRatePercent = (currentMissRate * 100).toFixed(1);
 
     const embed = new EmbedBuilder()
@@ -43,7 +53,7 @@ export default {
         },
         {
           name: '🎯 Tỷ lệ hiện tại',
-          value: `• Tỷ lệ câu hụt: **${currentMissRatePercent}%**\n• Rod Level: **${rodLevel}**\n• Giảm: **${((rodLevel - 1) * 2).toFixed(0)}%** nhờ nâng cấp`,
+          value: `• Tỷ lệ câu hụt: **${currentMissRatePercent}%**\n• Rod Level: **${rodLevel}/20**\n• Giảm: **${(missRateReduction * 100).toFixed(1)}%** nhờ nâng cấp`,
           inline: true
         },
         {
@@ -68,19 +78,31 @@ export default {
     });
 
     // Thông tin về nâng cấp
-    if (rodLevel < 10) {
-      const nextLevelMissRate = Math.max(baseMissRate - (rodLevel * 0.02), 0.05);
-      const nextLevelMissRatePercent = (nextLevelMissRate * 100).toFixed(1);
+    if (rodLevel < 20) {
+      let nextLevelMissRate;
+      let improvementText;
+      
+      if (rodLevel < 10) {
+        // Level 1-9: Next level still in first tier
+        nextLevelMissRate = Math.max(baseMissRate - (rodLevel * 0.02), 0.02);
+        improvementText = `• Rod Level ${rodLevel + 1}: Giảm tỷ lệ câu hụt xuống **${(nextLevelMissRate * 100).toFixed(1)}%**\n• Cải thiện: **2%** ít câu hụt hơn`;
+      } else {
+        // Level 10-19: In second tier
+        const currentReduction = 0.18 + ((rodLevel - 10) * 0.01);
+        const nextReduction = 0.18 + ((rodLevel - 9) * 0.01);
+        nextLevelMissRate = Math.max(baseMissRate - nextReduction, 0.01);
+        improvementText = `• Rod Level ${rodLevel + 1}: Giảm tỷ lệ câu hụt xuống **${(nextLevelMissRate * 100).toFixed(1)}%**\n• Cải thiện: **1%** ít câu hụt hơn`;
+      }
       
       embed.addFields({
         name: '⬆️ Nâng cấp tiếp theo',
-        value: `• Rod Level ${rodLevel + 1}: Giảm tỷ lệ câu hụt xuống **${nextLevelMissRatePercent}%**\n• Tiết kiệm: **${(currentMissRate - nextLevelMissRate) * 100}%** ít câu hụt hơn`,
+        value: improvementText,
         inline: false
       });
     } else {
       embed.addFields({
         name: '🏆 Rod tối đa',
-        value: '• Bạn đã đạt **Rod Level 10**!\n• Tỷ lệ câu hụt tối thiểu: **5%**\n• Không thể giảm thêm nữa',
+        value: '• Bạn đã đạt **Rod Level 20** - LEGENDARY!\n• Tỷ lệ câu hụt tối thiểu: **1%**\n• Đã đạt đỉnh cao nghệ thuật câu cá! 🎣✨',
         inline: false
       });
     }
