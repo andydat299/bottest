@@ -11,6 +11,7 @@
     "cleanup-empty": "node cleanup-empty-files.js",
     "clean": "node quick-cleanup.js",
     "fix": "node fix-conflicts.js",
+    "emergency": "node emergency-fix.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

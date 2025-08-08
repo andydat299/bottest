@@ -54,14 +54,21 @@
 ## 🚀 **DEPLOYMENT STEPS:**
 
 ```bash
-# 1. Fix any remaining conflicts
-npm run fix
+# EMERGENCY FIX for persistent duplicate export error:
+npm run emergency
 
-# 2. Deploy commands to Discord
+# Then normal deployment:
 npm run deploy
-
-# 3. Start bot
 npm start
+```
+
+**Alternative if still failing:**
+```bash
+# Manual steps:
+1. Delete events/interactionCreate.js
+2. Run: npm run emergency  
+3. Run: npm run deploy
+4. Run: npm start
 ```
 
 ---
