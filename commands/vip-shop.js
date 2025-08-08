@@ -147,6 +147,11 @@ export default {
       });
 
       collector.on('collect', async (selectInteraction) => {
+        // Check if interaction is already acknowledged
+        if (selectInteraction.replied || selectInteraction.deferred) {
+          return;
+        }
+
         try {
           await selectInteraction.deferUpdate();
 
