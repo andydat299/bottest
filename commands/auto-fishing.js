@@ -132,13 +132,33 @@ async function handleStop(interaction, AutoFishing, User, VIP) {
       { name: '📈 Hiệu suất', value: `${fishingResults.efficiency.toFixed(1)}%`, inline: true },
       { name: '🐟 Cá đã câu', value: `${fishingResults.fishCaught} con`, inline: true },
       { name: '❌ Cá hụt', value: `${fishingResults.fishMissed} lần`, inline: true },
-      { name: '💰 Xu kiếm được', value: `${fishingResults.totalXu.toLocaleString()} xu`, inline: true },
-      { name: '🎣 Chi tiết cá câu được', value: fishSummary, inline: false },
-      { name: '💳 Số dư mới', value: `${result.newBalance.toLocaleString()} xu`, inline: true }
+      { name: '💰 Xu kiếm được', value: `${fishingResults.totalXu.toLocaleString()} xu`, inline: true }
     )
     .setColor('#ffd700')
     .setThumbnail(interaction.user.displayAvatarURL())
     .setTimestamp();
+
+  // Add miss rate info if available
+  if (fishingResults.totalAttempts > 0) {
+    const actualMissRate = ((fishingResults.fishMissed / fishingResults.totalAttempts) * 100).toFixed(1);
+    embed.addFields({
+      name: '📊 Thống Kê Chi Tiết',
+      value: `**Tỷ lệ hụt thực tế:** ${actualMissRate}%\n**Cá thành công:** ${fishingResults.fishCaught}/${fishingResults.totalAttempts}\n**Tỷ lệ thành công:** ${fishingResults.efficiency.toFixed(1)}%`,
+      inline: false
+    });
+  }
+
+  embed.addFields({
+    name: '🎣 Chi tiết cá câu được', 
+    value: fishSummary, 
+    inline: false
+  });
+
+  embed.addFields({
+    name: '💳 Số dư mới', 
+    value: `${result.newBalance.toLocaleString()} xu`, 
+    inline: true
+  });
 
   // Add performance rating
   let performanceRating = '';
@@ -252,7 +272,7 @@ async function handleStatus(interaction, AutoFishing, VIP) {
   // Usage tips
   embed.addFields({
     name: '💡 Hướng Dẫn Sử Dụng',
-    value: '• `/auto-fishing start <phút>` - Bắt đầu\n• `/auto-fishing stop` - Dừng và nhận thưởng\n• `/auto-fishing status` - Xem trạng thái\n• Giới hạn reset vào 00:00 hàng ngày',
+    value: '• `/auto-fishing start <phút>` - Bắt đầu\n• `/auto-fishing stop` - Dừng và nhận thưởng\n• `/auto-fishing status` - Xem trạng thái\n• Giới hạn reset vào 00:00 hàng ngày\n• **Tỷ lệ hụt giống fishing thủ công**',
     inline: false
   });
 

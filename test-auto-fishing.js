@@ -38,7 +38,7 @@ async function testFishingCalculations() {
       rareFishBoost: 40
     };
     
-    const results = await calculateAutoFishingResults(60, vipBenefits); // 60 minutes
+    const results = await calculateAutoFishingResults(60, vipBenefits, 'test_user_123'); // 60 minutes
     
     console.log('   Duration: 60 minutes');
     console.log(`   Total attempts: ${results.totalAttempts}`);

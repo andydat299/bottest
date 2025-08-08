@@ -20,13 +20,13 @@ export function getAutoFishingLimits(vipTier) {
 }
 
 /**
- * Calculate fishing results for auto-fishing session
+ * Calculate fishing results for auto-fishing session using real fishing mechanics
  * @param {number} durationMinutes - Session duration in minutes
  * @param {Object} vipBenefits - VIP benefits object
- * @param {Object} settings - Auto-fishing settings
+ * @param {string} userId - User Discord ID for miss rate calculation
  * @returns {Object} Fishing results
  */
-export async function calculateAutoFishingResults(durationMinutes, vipBenefits, settings = {}) {
+export async function calculateAutoFishingResults(durationMinutes, vipBenefits, userId = null) {
   const results = {
     totalAttempts: 0,
     fishCaught: 0,
@@ -41,9 +41,23 @@ export async function calculateAutoFishingResults(durationMinutes, vipBenefits, 
   const totalSeconds = durationMinutes * 60;
   results.totalAttempts = Math.floor(totalSeconds / baseAttemptInterval);
 
-  // Apply VIP miss rate reduction
-  const baseMissRate = 15; // 15% base miss rate
-  const actualMissRate = Math.max(0, baseMissRate - (vipBenefits.fishingMissReduction || 0));
+  // Get actual miss rate using the same system as manual fishing
+  let actualMissRate = 15; // Default 15% miss rate
+  
+  try {
+    if (userId) {
+      // Import and use the real fishing miss rate system
+      const { calculateFishMissRate } = await import('./fishMissRateManager.js');
+      actualMissRate = await calculateFishMissRate(userId);
+    }
+    
+    // Apply VIP miss rate reduction on top of calculated miss rate
+    actualMissRate = Math.max(0, actualMissRate - (vipBenefits.fishingMissReduction || 0));
+  } catch (error) {
+    console.log('⚠️ Could not load miss rate system, using default 15%');
+    // Apply VIP reduction to default rate
+    actualMissRate = Math.max(0, 15 - (vipBenefits.fishingMissReduction || 0));
+  }
 
   // Import fish types from existing system
   const { fishTypes, totalWeight } = await import('./fishTypes.js');
@@ -51,20 +65,34 @@ export async function calculateAutoFishingResults(durationMinutes, vipBenefits, 
   // Apply VIP rare fish boost
   const rareFishBoost = (vipBenefits.rareFishBoost || 0) / 100;
 
+  // Calculate adjusted total weight with VIP boost
+  let adjustedTotalWeight = 0;
+  for (const fish of fishTypes) {
+    let adjustedWeight = fish.weight;
+    
+    // Boost rare fish (legendary and mythical) for VIP
+    if (fish.rarity === 'legendary' || fish.rarity === 'mythical') {
+      adjustedWeight *= (1 + rareFishBoost);
+    }
+    adjustedTotalWeight += adjustedWeight;
+  }
+
+  console.log(`🤖 Auto-fishing: Miss rate ${actualMissRate}%, VIP boost ${(rareFishBoost * 100)}%`);
+
   for (let i = 0; i < results.totalAttempts; i++) {
-    // Check if this attempt hits
+    // Check if this attempt hits (same logic as manual fishing)
     if (Math.random() * 100 >= actualMissRate) {
       // Successful fishing attempt
       results.fishCaught++;
 
-      // Use the same weighted random system as manual fishing
-      let randomValue = Math.random() * totalWeight;
+      // Use weighted random system with VIP adjustments
+      let randomValue = Math.random() * adjustedTotalWeight;
       let selectedFish = null;
 
       for (const fish of fishTypes) {
         let adjustedWeight = fish.weight;
         
-        // Boost rare fish (legendary and mythical) for VIP
+        // Apply VIP boost to rare fish
         if (fish.rarity === 'legendary' || fish.rarity === 'mythical') {
           adjustedWeight *= (1 + rareFishBoost);
         }
@@ -81,7 +109,7 @@ export async function calculateAutoFishingResults(durationMinutes, vipBenefits, 
         selectedFish = fishTypes[0];
       }
 
-      // Add to results using price instead of value
+      // Add to results using price from fishTypes
       results.totalXu += selectedFish.price;
       
       if (!results.fishByType[selectedFish.name]) {
@@ -96,7 +124,7 @@ export async function calculateAutoFishingResults(durationMinutes, vipBenefits, 
       results.fishByType[selectedFish.name].count++;
       results.fishByType[selectedFish.name].totalValue += selectedFish.price;
     } else {
-      // Missed attempt
+      // Missed attempt (same as manual fishing)
       results.fishMissed++;
     }
   }
@@ -104,6 +132,8 @@ export async function calculateAutoFishingResults(durationMinutes, vipBenefits, 
   // Calculate efficiency
   results.efficiency = results.totalAttempts > 0 ? 
     (results.fishCaught / results.totalAttempts * 100) : 0;
+
+  console.log(`🎣 Auto-fishing results: ${results.fishCaught}/${results.totalAttempts} (${results.efficiency.toFixed(1)}%)`);
 
   return results;
 }
@@ -288,8 +318,8 @@ export async function stopAutoFishingSession(AutoFishing, User, VIP, userId) {
       vipBenefits = vipRecord.benefits;
     }
 
-    // Calculate fishing results
-    const results = await calculateAutoFishingResults(durationMinutes, vipBenefits);
+    // Calculate fishing results with real miss rate calculation
+    const results = await calculateAutoFishingResults(durationMinutes, vipBenefits, userId);
 
     // Update user balance
     const user = await User.findOne({ discordId: userId });
@@ -351,7 +381,7 @@ export async function processExpiredAutoFishingSessions(AutoFishing, User, VIP) 
       const result = await stopAutoFishingSession(AutoFishing, User, VIP, session.userId);
       if (result.success) {
         completedSessions++;
-        console.log(`🤖 Auto-completed fishing session for user ${session.userId}`);
+        console.log(`🤖 Auto-completed fishing session for user ${session.userId} - ${result.results.fishCaught} fish, ${result.results.totalXu} xu`);
       }
     }
 
