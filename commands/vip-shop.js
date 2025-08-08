@@ -124,7 +124,7 @@ export default {
           },
           {
             name: '🎁 Hộp Bí Ẩn',
-            value: `**🎁 Cơ Bản:** ${MYSTERY_BOX_TYPES.basic.cost.toLocaleString()} xu - Phần thưởng ngẫu nhiên\n**🎊 Khổng Lồ:** ${MYSTERY_BOX_TYPES.mega.cost.toLocaleString()} xu - Phần thưởng tốt hơn\n**💎 Kim Cương:** ${MYSTERY_BOX_TYPES.diamond.cost.toLocaleString()} xu - Phần thưởng cực khủng (chỉ VIP)`,
+            value: `**🚧 Tạm thời bảo trì**\n\nMystery Box system đang được cập nhật và sẽ sớm trở lại với nhiều tính năng mới!`,
             inline: false
           }
         )
@@ -133,11 +133,11 @@ export default {
         .setTimestamp();
 
       const row1 = new ActionRowBuilder().addComponents(vipOptions);
-      const row2 = new ActionRowBuilder().addComponents(mysteryOptions);
+      // const row2 = new ActionRowBuilder().addComponents(mysteryOptions); // Mystery Box tạm thời tắt
 
       await interaction.editReply({ 
         embeds: [embed], 
-        components: [row1, row2]
+        components: [row1] // Chỉ hiển thị VIP options
       });
 
       // Handle select menu interactions
@@ -152,9 +152,12 @@ export default {
 
           if (selectInteraction.customId === 'vip_purchase') {
             await handleVipPurchase(selectInteraction, selectInteraction.values[0]);
-          } else if (selectInteraction.customId === 'mystery_purchase') {
+          } 
+          /* Mystery Box tạm thời tắt
+          else if (selectInteraction.customId === 'mystery_purchase') {
             await handleMysteryBoxPurchase(selectInteraction, selectInteraction.values[0]);
           }
+          */
         } catch (error) {
           console.error('❌ VIP shop interaction error:', error);
           await selectInteraction.followUp({
