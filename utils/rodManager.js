@@ -277,13 +277,26 @@ export function getUpgradeInfo(currentLevel, userBalance) {
 export function getAvailableRods(userBalance, vipTier = null) {
   const available = [];
   
+  // VIP hierarchy for better checking
+  const vipHierarchy = {
+    'bronze': 1,
+    'silver': 2,
+    'gold': 3, 
+    'diamond': 4
+  };
+  
+  const userVipLevel = vipHierarchy[vipTier?.toLowerCase()] || 0;
+  
   for (let level = 1; level <= 20; level++) {
     const rod = FISHING_RODS[level];
     const canAfford = userBalance >= rod.cost;
-    const hasVipAccess = !rod.vipRequired || vipTier === rod.vipRequired || 
-                        (vipTier === 'diamond') || 
-                        (vipTier === 'gold' && ['bronze', 'silver'].includes(rod.vipRequired)) ||
-                        (vipTier === 'silver' && rod.vipRequired === 'bronze');
+    
+    // Check VIP access
+    let hasVipAccess = true;
+    if (rod.vipRequired) {
+      const requiredVipLevel = vipHierarchy[rod.vipRequired.toLowerCase()] || 0;
+      hasVipAccess = userVipLevel >= requiredVipLevel;
+    }
 
     available.push({
       level,

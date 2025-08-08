@@ -107,19 +107,54 @@ export default {
       // Check VIP requirements
       if (nextRod.vipRequired) {
         const userVipTier = user.vipTier || null;
-        const hasVipAccess = userVipTier === nextRod.vipRequired ||
-                            (userVipTier === 'diamond') ||
-                            (userVipTier === 'gold' && ['bronze', 'silver'].includes(nextRod.vipRequired)) ||
-                            (userVipTier === 'silver' && nextRod.vipRequired === 'bronze');
+        
+        // VIP hierarchy check - more comprehensive
+        const vipHierarchy = {
+          'bronze': 1,
+          'silver': 2, 
+          'gold': 3,
+          'diamond': 4
+        };
+        
+        const requiredVipLevel = vipHierarchy[nextRod.vipRequired.toLowerCase()] || 0;
+        const userVipLevel = vipHierarchy[userVipTier?.toLowerCase()] || 0;
+        
+        const hasVipAccess = userVipLevel >= requiredVipLevel;
 
         if (!hasVipAccess) {
-          return await interaction.editReply({
-            content: `❌ **Yêu cầu VIP!**\n\n` +
-                     `**${nextRod.name}** yêu cầu **VIP ${nextRod.vipRequired.toUpperCase()}** trở lên.\n\n` +
-                     `VIP hiện tại của bạn: ${userVipTier ? userVipTier.toUpperCase() : 'NONE'}\n\n` +
-                     `Hãy nâng cấp VIP để sử dụng cần câu premium!`
-          });
+          const embed = new EmbedBuilder()
+            .setTitle('👑 **VIP REQUIRED**')
+            .setDescription(`**${interaction.user.username}** - Cần VIP để nâng cấp!`)
+            .setColor('#e74c3c')
+            .addFields({
+              name: '🎣 **Next Rod**',
+              value: `**${nextRod.name}**\n` +
+                     `Level ${upgradeToLevel}/20\n` +
+                     `Tier: ${nextRod.tier}`,
+              inline: true
+            })
+            .addFields({
+              name: '👑 **VIP Requirements**',
+              value: `**Required:** VIP ${nextRod.vipRequired.toUpperCase()} or higher\n` +
+                     `**Your VIP:** ${userVipTier ? userVipTier.toUpperCase() : 'NONE'}\n` +
+                     `**Status:** ${hasVipAccess ? '✅ Access Granted' : '❌ Insufficient VIP'}`,
+              inline: true
+            })
+            .addFields({
+              name: '💡 **How to Get VIP**',
+              value: '• Purchase VIP Bronze to unlock premium rods\n' +
+                     '• VIP Bronze unlocks all rods (Levels 11-20)\n' +
+                     '• Higher VIP tiers include additional benefits\n' +
+                     '• Contact administrators for VIP upgrade',
+              inline: false
+            })
+            .setTimestamp();
+
+          return await interaction.editReply({ embeds: [embed] });
         }
+        
+        // Debug log for VIP checking
+        console.log(`VIP Check - User: ${userVipTier}, Required: ${nextRod.vipRequired}, Access: ${hasVipAccess}`);
       }
 
       // Check if can afford
