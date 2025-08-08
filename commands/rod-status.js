@@ -33,26 +33,26 @@ export default {
       const durabilityBar = '█'.repeat(Math.floor(durabilityPercent / 10)) + '░'.repeat(10 - Math.floor(durabilityPercent / 10));
 
       const embed = new EmbedBuilder()
-        .setTitle('🎣 **ROD STATUS**')
+        .setTitle('🎣 **TRẠNG THÁI CẦN CÂU**')
         .setDescription(`**${interaction.user.username}** - Thông tin cần câu`)
         .setColor(getRodTierColor(currentRod.tier))
         .setThumbnail(interaction.user.displayAvatarURL())
         .addFields({
-          name: '🎣 **Current Rod**',
+          name: '🎣 **Cần Câu Hiện Tại**',
           value: `**${currentRod.name}**\n` +
-                 `**Level:** ${currentLevel}/20\n` +
-                 `**Tier:** ${currentRod.tier}`,
+                 `**Cấp độ:** ${currentLevel}/20\n` +
+                 `**Hạng:** ${currentRod.tier}`,
           inline: true
         })
         .addFields({
-          name: '🔧 **Durability**',
+          name: '🔧 **Độ Bền**',
           value: `${durabilityBar}\n` +
                  `**${rodDurability}/${currentRod.durability}** (${durabilityPercent}%)\n` +
-                 `${durabilityPercent <= 20 ? '⚠️ Low durability!' : durabilityPercent <= 50 ? '🔶 Medium' : '✅ Good'}`,
+                 `${durabilityPercent <= 20 ? '⚠️ Sắp hỏng!' : durabilityPercent <= 50 ? '🔶 Tạm ổn' : '✅ Tốt'}`,
           inline: true
         })
         .addFields({
-          name: '💰 **Balance**',
+          name: '💰 **Số Dư**',
           value: `**${userBalance.toLocaleString()} xu**`,
           inline: true
         });
@@ -70,18 +70,18 @@ export default {
         }
 
         embed.addFields({
-          name: '⬆️ **Next Upgrade**',
-          value: `**${nextRod.name}** (Level ${currentLevel + 1})\n` +
-                 `**Cost:** ${nextRod.cost.toLocaleString()} xu\n` +
-                 `**VIP Required:** ${nextRod.vipRequired ? nextRod.vipRequired.toUpperCase() : 'None'}\n` +
-                 `**Can afford:** ${upgradeInfo.canUpgrade ? '✅ Yes' : `❌ Need ${upgradeInfo.missing.toLocaleString()} more`}`,
+          name: '⬆️ **Nâng Cấp Tiếp Theo**',
+          value: `**${nextRod.name}** (Cấp ${currentLevel + 1})\n` +
+                 `**Chi phí:** ${nextRod.cost.toLocaleString()} xu\n` +
+                 `**Yêu cầu VIP:** ${nextRod.vipRequired ? nextRod.vipRequired.toUpperCase() : 'Không'}\n` +
+                 `**Có thể mua:** ${upgradeInfo.canUpgrade ? '✅ Có' : `❌ Thiếu ${upgradeInfo.missing.toLocaleString()} xu`}`,
           inline: false
         })
         .addFields({
-          name: '🎯 **Max Level Info**',
-          value: `**Total cost to max:** ${totalCostToMax.toLocaleString()} xu\n` +
-                 `**Your balance:** ${userBalance.toLocaleString()} xu\n` +
-                 `**Can reach max:** ${userBalance >= totalCostToMax ? '✅ Yes' : `❌ Need ${(totalCostToMax - userBalance).toLocaleString()} more`}`,
+          name: '🎯 **Thông Tin Cấp Tối Đa**',
+          value: `**Tổng chi phí lên max:** ${totalCostToMax.toLocaleString()} xu\n` +
+                 `**Số dư của bạn:** ${userBalance.toLocaleString()} xu\n` +
+                 `**Có thể lên max:** ${userBalance >= totalCostToMax ? '✅ Có' : `❌ Thiếu ${(totalCostToMax - userBalance).toLocaleString()} xu`}`,
           inline: false
         });
 
@@ -94,30 +94,30 @@ export default {
           const hasVipAccess = userVipLevel >= requiredVipLevel;
 
           embed.addFields({
-            name: '👑 **VIP Status**',
-            value: `**Your VIP:** ${userVipTier ? userVipTier.toUpperCase() : 'NONE'}\n` +
-                   `**Required:** VIP ${nextRod.vipRequired.toUpperCase()}\n` +
-                   `**Access:** ${hasVipAccess ? '✅ Granted' : '❌ Insufficient'}`,
+            name: '👑 **Trạng Thái VIP**',
+            value: `**VIP của bạn:** ${userVipTier ? userVipTier.toUpperCase() : 'KHÔNG CÓ'}\n` +
+                   `**Yêu cầu:** VIP ${nextRod.vipRequired.toUpperCase()}\n` +
+                   `**Quyền truy cập:** ${hasVipAccess ? '✅ Đủ điều kiện' : '❌ Không đủ'}`,
             inline: true
           });
         }
       } else {
         // Max level reached
         embed.addFields({
-          name: '🏆 **Maximum Level**',
-          value: `🎉 **Congratulations!**\n` +
-                 `You've reached the maximum rod level!\n` +
-                 `**Transcendent** tier mastery achieved.`,
+          name: '🏆 **Cấp Độ Tối Đa**',
+          value: `🎉 **Chúc mừng!**\n` +
+                 `Bạn đã đạt cấp độ cần câu tối đa!\n` +
+                 `Đã thành thạo hạng **Siêu Việt**.`,
           inline: false
         });
       }
 
       // Quick action buttons info
       embed.addFields({
-        name: '⚡ **Quick Actions**',
+        name: '⚡ **Hành Động Nhanh**',
         value: currentLevel < 20 ? 
-               '• `/upgrade-rod` - Upgrade to next level\n• `/repair-rod` - Repair durability\n• `/rod-shop` - Browse all rods' :
-               '• `/repair-rod` - Repair durability\n• `/rod-collection` - View all owned rods',
+               '• `/upgrade-rod` - Nâng cấp lên level tiếp theo\n• `/repair-rod` - Sửa chữa độ bền\n• `/rod-shop` - Xem tất cả cần câu' :
+               '• `/repair-rod` - Sửa chữa độ bền\n• `/rod-collection` - Xem bộ sưu tập cần câu',
         inline: false
       });
 

@@ -27,23 +27,23 @@ export default {
       const currentRod = getRodBenefits(currentLevel);
       const durabilityPercent = Math.round((rodDurability / currentRod.durability) * 100);
 
-      let statusText = `🎣 **${currentRod.name}** (Level ${currentLevel}/20)\n`;
-      statusText += `🔧 **Durability:** ${rodDurability}/${currentRod.durability} (${durabilityPercent}%)\n`;
-      statusText += `💰 **Balance:** ${userBalance.toLocaleString()} xu\n\n`;
+      let statusText = `🎣 **${currentRod.name}** (Cấp ${currentLevel}/20)\n`;
+      statusText += `🔧 **Độ bền:** ${rodDurability}/${currentRod.durability} (${durabilityPercent}%)\n`;
+      statusText += `💰 **Số dư:** ${userBalance.toLocaleString()} xu\n\n`;
 
       if (currentLevel < 20) {
         const nextRod = getRodBenefits(currentLevel + 1);
         const upgradeInfo = getUpgradeInfo(currentLevel, userBalance);
 
-        statusText += `⬆️ **Next:** ${nextRod.name} (Level ${currentLevel + 1})\n`;
-        statusText += `💸 **Cost:** ${nextRod.cost.toLocaleString()} xu\n`;
+        statusText += `⬆️ **Tiếp theo:** ${nextRod.name} (Cấp ${currentLevel + 1})\n`;
+        statusText += `💸 **Chi phí:** ${nextRod.cost.toLocaleString()} xu\n`;
         
         if (nextRod.vipRequired) {
           const userVipTier = user.currentVipTier || user.vipTier || null;
-          statusText += `👑 **VIP Required:** ${nextRod.vipRequired.toUpperCase()} (You: ${userVipTier ? userVipTier.toUpperCase() : 'NONE'})\n`;
+          statusText += `👑 **Yêu cầu VIP:** ${nextRod.vipRequired.toUpperCase()} (Bạn: ${userVipTier ? userVipTier.toUpperCase() : 'KHÔNG CÓ'})\n`;
         }
 
-        statusText += `✅ **Can upgrade:** ${upgradeInfo.canUpgrade ? 'Yes' : `No (need ${upgradeInfo.missing.toLocaleString()} more xu)`}\n\n`;
+        statusText += `✅ **Có thể nâng cấp:** ${upgradeInfo.canUpgrade ? 'Có' : `Không (thiếu ${upgradeInfo.missing.toLocaleString()} xu)`}\n\n`;
 
         // Calculate total to max
         let totalToMax = 0;
@@ -51,15 +51,15 @@ export default {
           totalToMax += getRodBenefits(level).cost;
         }
         
-        statusText += `🎯 **Total to max level:** ${totalToMax.toLocaleString()} xu\n`;
-        statusText += `${userBalance >= totalToMax ? '✅ Can reach max!' : `❌ Need ${(totalToMax - userBalance).toLocaleString()} more for max`}`;
+        statusText += `🎯 **Tổng chi phí lên max:** ${totalToMax.toLocaleString()} xu\n`;
+        statusText += `${userBalance >= totalToMax ? '✅ Có thể lên max!' : `❌ Thiếu ${(totalToMax - userBalance).toLocaleString()} xu để lên max`}`;
       } else {
-        statusText += `🏆 **MAX LEVEL REACHED!**\n`;
-        statusText += `🎉 Transcendent tier mastery!`;
+        statusText += `🏆 **ĐÃ ĐẠT CẤP TỐI ĐA!**\n`;
+        statusText += `🎉 Thành thạo hạng Siêu Việt!`;
       }
 
       const embed = new EmbedBuilder()
-        .setTitle('🎣 **Rod Quick Status**')
+        .setTitle('🎣 **Trạng Thái Cần Câu Nhanh**')
         .setDescription(statusText)
         .setColor(getRodTierColor(currentRod.tier))
         .setTimestamp();
@@ -69,7 +69,7 @@ export default {
     } catch (error) {
       console.error('❌ Rod quick status error:', error);
       await interaction.editReply({
-        content: `❌ **Error:** ${error.message}`
+        content: `❌ **Lỗi:** ${error.message}`
       });
     }
   }
