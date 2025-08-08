@@ -7,12 +7,17 @@
 - **Fix:** Removed invalid imports từ wheel.js
 - **Status:** ✅ Fixed
 
-### 2. **Event File Conflicts**  
+### 2. **Duplicate Export Default Error**
+- **Lỗi:** `SyntaxError: Identifier '.default' has already been declared`
+- **Fix:** Recreated interactionCreate.js with clean single export
+- **Status:** ✅ Fixed
+
+### 3. **Event File Conflicts**  
 - **Lỗi:** Duplicate event handlers causing conflicts
 - **Fix:** Removed gameInteractionCreate.js, simplified interactionCreate.js
 - **Status:** ✅ Fixed
 
-### 3. **Missing Export Functions**
+### 4. **Missing Export Functions**
 - **Lỗi:** Functions không exist trong wheel.js
 - **Fix:** Removed references, added placeholder handlers
 - **Status:** ✅ Fixed

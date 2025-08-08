@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { unlinkSync, readFileSync, statSync } from 'fs';
+import { unlinkSync, readFileSync, statSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
@@ -8,7 +8,27 @@ import { dirname } from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-console.log('🔧 Fixing export conflicts and cleaning up...');
+console.log('🔧 Fixing export conflicts and duplicate exports...');
+
+// Fix duplicate export in interactionCreate.js
+const interactionFile = join(__dirname, 'events', 'interactionCreate.js');
+const newInteractionFile = join(__dirname, 'events', 'interactionCreateNew.js');
+
+try {
+  if (statSync(newInteractionFile).isFile()) {
+    const newContent = readFileSync(newInteractionFile, 'utf-8');
+    
+    // Replace old file with new clean version
+    writeFileSync(interactionFile, newContent, 'utf-8');
+    console.log('✅ Fixed interactionCreate.js - replaced with clean version');
+    
+    // Remove backup file
+    unlinkSync(newInteractionFile);
+    console.log('🗑️  Removed interactionCreateNew.js backup');
+  }
+} catch (error) {
+  console.log('⚠️  Could not fix interactionCreate.js:', error.message);
+}
 
 // Remove conflicting gameInteractionCreate.js
 const conflictFile = join(__dirname, 'events', 'gameInteractionCreate.js');
@@ -51,10 +71,10 @@ try {
   console.log('⏭️  userSchemaNew.js not found');
 }
 
-console.log('✅ Conflict cleanup completed!');
+console.log('✅ Export conflict fixes completed!');
 console.log('');
 console.log('📋 Next steps:');
-console.log('1. Manually add fishingLuck field to schemas/userSchema.js if needed');
-console.log('2. Deploy commands: npm run deploy');
-console.log('3. Test fishing-luck command: /fishing-luck user:@someone');
-console.log('4. Test game panel: /game-panel');
+console.log('1. Run: npm run deploy');
+console.log('2. Run: npm start');
+console.log('3. Test commands: /fishing-luck, /game-panel');
+console.log('4. If userSchema needs fishingLuck field, add it manually');
