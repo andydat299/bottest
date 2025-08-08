@@ -1,10 +1,10 @@
 import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
-import { getRodBenefits, getRodDurabilityStatus, getRodDurabilityInfo, calculateRepairCost } from '../utils/rodManager.js';
+import { getRodBenefits, getUpgradeInfo, getRodTierColor } from '../utils/rodManager.js';
 
 export default {
   data: new SlashCommandBuilder()
     .setName('rod-status')
-    .setDescription('🔧 Kiểm tra tình trạng và độ bền của cần câu'),
+    .setDescription('🎣 Xem thông tin cần câu hiện tại và chi phí nâng cấp'),
   prefixEnabled: true,
 
   async execute(interaction) {
@@ -21,121 +21,107 @@ export default {
         });
       }
 
-      const rodLevel = user.rodLevel || 1;
-      const currentDurability = user.rodDurability || 100;
-      const rod = getRodBenefits(rodLevel);
-      const maxDurability = rod.durability;
+      const currentLevel = user.rodLevel || 1;
+      const userBalance = user.balance || 0;
+      const rodDurability = user.rodDurability || 0;
+
+      // Get current rod info
+      const currentRod = getRodBenefits(currentLevel);
       
-      // Get durability status
-      const durabilityStatus = getRodDurabilityStatus(currentDurability, maxDurability);
-      const durabilityInfo = getRodDurabilityInfo(rodLevel);
-      const repairCost = calculateRepairCost(rodLevel, currentDurability, maxDurability);
+      // Calculate durability percentage
+      const durabilityPercent = Math.round((rodDurability / currentRod.durability) * 100);
+      const durabilityBar = '█'.repeat(Math.floor(durabilityPercent / 10)) + '░'.repeat(10 - Math.floor(durabilityPercent / 10));
 
       const embed = new EmbedBuilder()
-        .setTitle('🔧 **ROD STATUS & DURABILITY**')
-        .setDescription(`**${interaction.user.username}** - Tình trạng cần câu`)
-        .setColor(durabilityStatus.durabilityPercent >= 60 ? '#2ecc71' : 
-                 durabilityStatus.durabilityPercent >= 30 ? '#f39c12' : '#e74c3c')
+        .setTitle('🎣 **ROD STATUS**')
+        .setDescription(`**${interaction.user.username}** - Thông tin cần câu`)
+        .setColor(getRodTierColor(currentRod.tier))
         .setThumbnail(interaction.user.displayAvatarURL())
-        .setTimestamp();
+        .addFields({
+          name: '🎣 **Current Rod**',
+          value: `**${currentRod.name}**\n` +
+                 `**Level:** ${currentLevel}/20\n` +
+                 `**Tier:** ${currentRod.tier}`,
+          inline: true
+        })
+        .addFields({
+          name: '🔧 **Durability**',
+          value: `${durabilityBar}\n` +
+                 `**${rodDurability}/${currentRod.durability}** (${durabilityPercent}%)\n` +
+                 `${durabilityPercent <= 20 ? '⚠️ Low durability!' : durabilityPercent <= 50 ? '🔶 Medium' : '✅ Good'}`,
+          inline: true
+        })
+        .addFields({
+          name: '💰 **Balance**',
+          value: `**${userBalance.toLocaleString()} xu**`,
+          inline: true
+        });
 
-      // Current rod info
-      embed.addFields({
-        name: '🎣 **Current Rod**',
-        value: `**${rod.name}**\n` +
-               `**Level:** ${rodLevel}/20\n` +
-               `**Tier:** ${rod.tier}\n` +
-               `**Benefits:** -${rod.missReduction}% miss, +${rod.rareBoost}% rare`,
-        inline: true
-      });
+      // Add upgrade info if not at max level
+      if (currentLevel < 20) {
+        const nextRod = getRodBenefits(currentLevel + 1);
+        const upgradeInfo = getUpgradeInfo(currentLevel, userBalance);
 
-      // Durability status
-      const durabilityBar = createDurabilityBar(currentDurability, maxDurability, 15);
-      embed.addFields({
-        name: `${durabilityStatus.emoji} **Durability Status**`,
-        value: `**Status:** ${durabilityStatus.status}\n` +
-               `**Durability:** ${currentDurability}/${maxDurability} (${durabilityStatus.durabilityPercent}%)\n` +
-               `${durabilityBar}\n` +
-               `${durabilityStatus.warning ? `⚠️ **${durabilityStatus.warning}**` : '✅ **Rod in good condition**'}`,
-        inline: true
-      });
+        // Calculate total cost for max level
+        let totalCostToMax = 0;
+        for (let level = currentLevel + 1; level <= 20; level++) {
+          const rod = getRodBenefits(level);
+          totalCostToMax += rod.cost;
+        }
 
-      // Maintenance info
-      embed.addFields({
-        name: '🔧 **Maintenance Info**',
-        value: `**Tier:** ${durabilityInfo.tier}\n` +
-               `**Maintenance:** ${durabilityInfo.maintenance}\n` +
-               `**Durability Loss:** ${durabilityInfo.durabilityPerUse} per use\n` +
-               `**Break Chance:** ${durabilityInfo.breakChance}\n` +
-               `**Expected Uses:** ~${durabilityInfo.expectedUses} before repair`,
-        inline: false
-      });
-
-      // Repair cost
-      if (currentDurability < maxDurability) {
         embed.addFields({
-          name: '💰 **Repair Information**',
-          value: `**Repair Cost:** ${repairCost.toLocaleString()} xu\n` +
-                 `**Full Repair Cost:** ${durabilityInfo.repairCost}\n` +
-                 `**Damage:** ${((maxDurability - currentDurability) / maxDurability * 100).toFixed(1)}% damaged\n` +
-                 `💡 Use \`/repair-rod\` to fix your rod`,
+          name: '⬆️ **Next Upgrade**',
+          value: `**${nextRod.name}** (Level ${currentLevel + 1})\n` +
+                 `**Cost:** ${nextRod.cost.toLocaleString()} xu\n` +
+                 `**VIP Required:** ${nextRod.vipRequired ? nextRod.vipRequired.toUpperCase() : 'None'}\n` +
+                 `**Can afford:** ${upgradeInfo.canUpgrade ? '✅ Yes' : `❌ Need ${upgradeInfo.missing.toLocaleString()} more`}`,
+          inline: false
+        })
+        .addFields({
+          name: '🎯 **Max Level Info**',
+          value: `**Total cost to max:** ${totalCostToMax.toLocaleString()} xu\n` +
+                 `**Your balance:** ${userBalance.toLocaleString()} xu\n` +
+                 `**Can reach max:** ${userBalance >= totalCostToMax ? '✅ Yes' : `❌ Need ${(totalCostToMax - userBalance).toLocaleString()} more`}`,
+          inline: false
+        });
+
+        // VIP status if needed for next upgrade
+        if (nextRod.vipRequired) {
+          const userVipTier = user.currentVipTier || user.vipTier || null;
+          const vipHierarchy = { 'bronze': 1, 'silver': 2, 'gold': 3, 'diamond': 4 };
+          const requiredVipLevel = vipHierarchy[nextRod.vipRequired.toLowerCase()] || 0;
+          const userVipLevel = vipHierarchy[String(userVipTier || '').toLowerCase()] || 0;
+          const hasVipAccess = userVipLevel >= requiredVipLevel;
+
+          embed.addFields({
+            name: '👑 **VIP Status**',
+            value: `**Your VIP:** ${userVipTier ? userVipTier.toUpperCase() : 'NONE'}\n` +
+                   `**Required:** VIP ${nextRod.vipRequired.toUpperCase()}\n` +
+                   `**Access:** ${hasVipAccess ? '✅ Granted' : '❌ Insufficient'}`,
+            inline: true
+          });
+        }
+      } else {
+        // Max level reached
+        embed.addFields({
+          name: '🏆 **Maximum Level**',
+          value: `🎉 **Congratulations!**\n` +
+                 `You've reached the maximum rod level!\n` +
+                 `**Transcendent** tier mastery achieved.`,
           inline: false
         });
       }
 
-      // Tier-specific advice
-      if (rodLevel <= 10) {
-        embed.addFields({
-          name: '💡 **Standard Tier Tips**',
-          value: '• Low maintenance costs\n' +
-                 '• Reliable and durable\n' +
-                 '• Perfect for regular fishing\n' +
-                 '• Repair when durability drops below 50%',
-          inline: true
-        });
-      } else {
-        embed.addFields({
-          name: '⚡ **Premium Tier Tips**',
-          value: '• High performance, high maintenance\n' +
-                 '• Monitor durability closely\n' +
-                 '• Repair when durability drops below 70%\n' +
-                 '• Consider backup rod for safety',
-          inline: true
-        });
-      }
-
-      // Durability tier comparison
+      // Quick action buttons info
       embed.addFields({
-        name: '📊 **Rod Performance Trade-offs**',
-        value: `**Pros:** ${durabilityInfo.pros.join(', ')}\n` +
-               `**Cons:** ${durabilityInfo.cons.join(', ')}\n` +
-               `**Description:** ${durabilityInfo.description}`,
+        name: '⚡ **Quick Actions**',
+        value: currentLevel < 20 ? 
+               '• `/upgrade-rod` - Upgrade to next level\n• `/repair-rod` - Repair durability\n• `/rod-shop` - Browse all rods' :
+               '• `/repair-rod` - Repair durability\n• `/rod-collection` - View all owned rods',
         inline: false
       });
 
-      // Action recommendations
-      const actions = [];
-      if (durabilityStatus.durabilityPercent < 20) {
-        actions.push('🚨 **Immediate repair required!**');
-      } else if (durabilityStatus.durabilityPercent < 40) {
-        actions.push('🔧 **Schedule repair soon**');
-      } else if (durabilityStatus.durabilityPercent < 60) {
-        actions.push('⏰ **Plan for upcoming repair**');
-      } else {
-        actions.push('✅ **No immediate action needed**');
-      }
-
-      if (rodLevel > 10 && durabilityStatus.durabilityPercent < 70) {
-        actions.push('💎 **Premium rod needs frequent care**');
-      }
-
-      if (actions.length > 0) {
-        embed.addFields({
-          name: '🎯 **Recommended Actions**',
-          value: actions.join('\n'),
-          inline: false
-        });
-      }
+      embed.setTimestamp();
 
       await interaction.editReply({ embeds: [embed] });
 
@@ -143,31 +129,8 @@ export default {
       console.error('❌ Rod status command error:', error);
       
       await interaction.editReply({
-        content: `❌ **Có lỗi khi kiểm tra tình trạng cần câu:**\n\`\`\`${error.message}\`\`\``
+        content: `❌ **Có lỗi khi xem thông tin cần câu:**\n\`\`\`${error.message}\`\`\``
       });
     }
   }
 };
-
-// Create durability bar
-function createDurabilityBar(current, max, length = 15) {
-  const percentage = current / max;
-  const filled = Math.round(length * percentage);
-  const empty = length - filled;
-  
-  let fillChar = '█';
-  let emptyChar = '▒';
-  
-  // Color coding based on durability
-  if (percentage >= 0.8) {
-    fillChar = '🟢'; // Green
-  } else if (percentage >= 0.6) {
-    fillChar = '🟡'; // Yellow
-  } else if (percentage >= 0.4) {
-    fillChar = '🟠'; // Orange
-  } else {
-    fillChar = '🔴'; // Red
-  }
-  
-  return fillChar.repeat(Math.max(0, filled)) + emptyChar.repeat(Math.max(0, empty));
-}
