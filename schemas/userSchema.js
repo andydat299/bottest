@@ -46,7 +46,10 @@ const userSchema = new mongoose.Schema({
     expiresAt: { type: Date, default: null }, // null = permanent
     reason: { type: String, default: 'Admin adjustment' },
     isActive: { type: Boolean, default: true }
-  }
+  },
+  // VIP status reference (lightweight)
+  isVip: { type: Boolean, default: false },
+  currentVipTier: { type: String, enum: ['none', 'bronze', 'silver', 'gold', 'diamond'], default: 'none' }
 });
 
 export const User = mongoose.model('User', userSchema);

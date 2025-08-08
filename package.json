@@ -9,6 +9,7 @@
     "force-deploy": "node force-deploy.js",
     "cleanup": "node railway-cleanup.js",
     "clean": "node instant-cleanup.js",
+    "check-conflicts": "node check-vip-conflicts.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
