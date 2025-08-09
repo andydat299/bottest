@@ -98,7 +98,7 @@ export const startAutoFishingSession = async (AutoFishing, VIP, userId, minutes)
     // Check VIP permissions with detailed logging
     console.log(`🔍 Auto-fishing VIP check for user: ${userId}`);
     
-    const vip = await VIP.findOne({ discordId: userId });
+    const vip = await VIP.findOne({ userId: userId }); // Updated to use userId instead of discordId
     console.log(`📊 VIP database query result:`, vip);
     
     const limits = getAutoFishingLimits(vip);
@@ -108,13 +108,15 @@ export const startAutoFishingSession = async (AutoFishing, VIP, userId, minutes)
       console.log(`❌ Auto-fishing access denied:`, {
         vipExists: !!vip,
         vipActive: vip?.isActive,
-        vipTier: vip?.tier,
-        limitsEnabled: limits.enabled
+        vipTier: vip?.tier || vip?.currentTier,
+        vipExpired: vip?.expiresAt ? new Date() > new Date(vip.expiresAt) : false,
+        limitsEnabled: limits.enabled,
+        reason: limits.reason
       });
       
       return {
         success: false,
-        error: `Cần VIP Vàng hoặc cao hơn để sử dụng Auto-Fishing!\n\n**Debug Info:**\n• VIP Record: ${vip ? 'Found' : 'Not found'}\n• VIP Active: ${vip?.isActive || 'N/A'}\n• VIP Tier: ${vip?.tier || 'N/A'}\n• Required: gold/diamond/platinum\n\nUse \`/debug-vip-autofish\` for detailed analysis.`
+        error: `Cần VIP Vàng hoặc cao hơn để sử dụng Auto-Fishing!\n\n**Debug Info:**\n• VIP Record: ${vip ? 'Found' : 'Not found'}\n• VIP Active: ${vip?.isActive || 'N/A'}\n• VIP Tier: ${vip?.tier || vip?.currentTier || 'N/A'}\n• VIP Expires: ${vip?.expiresAt ? new Date(vip.expiresAt).toLocaleDateString() : 'N/A'}\n• Required: gold/diamond/platinum\n• Reason: ${limits.reason || 'Unknown'}\n\nUse \`/debug-vip-autofish\` for detailed analysis.`
       };
     }
     
@@ -362,7 +364,7 @@ export const stopAutoFishingSession = async (AutoFishing, User, VIP, userId) => 
  */
 export const getAutoFishingStatus = async (AutoFishing, VIP, userId) => {
   try {
-    const vip = await VIP.findOne({ discordId: userId });
+    const vip = await VIP.findOne({ userId: userId }); // Updated to use userId
     const limits = getAutoFishingLimits(vip);
     
     // Check active session
@@ -427,38 +429,84 @@ export const getAutoFishingStatus = async (AutoFishing, VIP, userId) => {
  * Get auto-fishing limits based on VIP level
  */
 export const getAutoFishingLimits = (vip) => {
-  if (!vip || !vip.isActive) {
+  // Handle both old and new VIP schema formats
+  const isVipActive = vip?.isActive;
+  const vipTier = vip?.tier || vip?.currentTier; // Support both formats
+  
+  console.log(`🔍 VIP data analysis:`, {
+    hasVip: !!vip,
+    isActive: isVipActive,
+    tier: vipTier,
+    rawVip: vip
+  });
+  
+  if (!vip || !isVipActive) {
     return {
       enabled: false,
       name: 'Free User',
-      dailyMinutes: 0
+      dailyMinutes: 0,
+      reason: !vip ? 'No VIP record' : 'VIP inactive'
     };
   }
   
-  switch (vip.tier) {
+  // Check if VIP expired
+  if (vip.expiresAt && new Date() > new Date(vip.expiresAt)) {
+    console.log(`⚠️ VIP expired:`, {
+      expiresAt: vip.expiresAt,
+      now: new Date()
+    });
+    
+    return {
+      enabled: false,
+      name: 'Expired VIP',
+      dailyMinutes: 0,
+      reason: 'VIP expired'
+    };
+  }
+  
+  switch (vipTier) {
     case 'gold':
       return {
         enabled: true,
         name: 'VIP Vàng',
-        dailyMinutes: 120 // 2 hours
+        dailyMinutes: 120, // 2 hours
+        tier: 'gold'
       };
     case 'diamond':
       return {
         enabled: true,
         name: 'VIP Kim Cương',
-        dailyMinutes: 300 // 5 hours
+        dailyMinutes: 300, // 5 hours
+        tier: 'diamond'
       };
     case 'platinum':
       return {
         enabled: true,
         name: 'VIP Bạch Kim',
-        dailyMinutes: 480 // 8 hours
+        dailyMinutes: 480, // 8 hours
+        tier: 'platinum'
+      };
+    case 'silver':
+      return {
+        enabled: true,
+        name: 'VIP Bạc',
+        dailyMinutes: 60, // 1 hour
+        tier: 'silver'
+      };
+    case 'bronze':
+      return {
+        enabled: false, // Bronze doesn't get auto-fishing
+        name: 'VIP Đồng',
+        dailyMinutes: 0,
+        tier: 'bronze',
+        reason: 'Bronze VIP không có auto-fishing'
       };
     default:
       return {
         enabled: false,
         name: 'Free User',
-        dailyMinutes: 0
+        dailyMinutes: 0,
+        reason: `Unknown tier: ${vipTier}`
       };
   }
 };
