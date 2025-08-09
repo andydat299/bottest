@@ -42,8 +42,28 @@ for (const file of commandFiles) {
     
     // Check if command has required structure
     if ('data' in command.default && 'execute' in command.default) {
-      commands.push(command.default.data.toJSON());
-      console.log(`  ✅ Loaded: /${command.default.data.name} - ${command.default.data.description}`);
+      // Validate command data before adding
+      const commandData = command.default.data.toJSON();
+      
+      // Check command name
+      if (!commandData.name || commandData.name.length < 1 || commandData.name.length > 32) {
+        console.log(`  ❌ Invalid name length in ${file}: "${commandData.name}" (must be 1-32 chars)`);
+        continue;
+      }
+      
+      if (!/^[a-z0-9_-]+$/.test(commandData.name)) {
+        console.log(`  ❌ Invalid name format in ${file}: "${commandData.name}" (only lowercase, numbers, _, - allowed)`);
+        continue;
+      }
+      
+      // Check description
+      if (!commandData.description || commandData.description.length < 1 || commandData.description.length > 100) {
+        console.log(`  ❌ Invalid description length in ${file}: ${commandData.description?.length || 0} chars (must be 1-100)`);
+        continue;
+      }
+      
+      commands.push(commandData);
+      console.log(`  ✅ Loaded: /${commandData.name} - ${commandData.description}`);
     } else {
       console.log(`  ❌ Invalid command format: ${file}`);
       console.log(`     Missing 'data' or 'execute' property`);

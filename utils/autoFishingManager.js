@@ -169,6 +169,11 @@ export const startAutoFishingSession = async (AutoFishing, VIP, userId, minutes)
       status: 'active'
     };
     
+    // Get user's current rod level for database record
+    const User = await import('../schemas/userSchema.js').then(m => m.User);
+    const user = await User.findOne({ discordId: userId });
+    const userRodLevel = user?.rodLevel || 1; // Default to 1 if not found
+    
     // Create database record for background job tracking
     const dbSession = await AutoFishing.create({
       userId,
@@ -180,7 +185,7 @@ export const startAutoFishingSession = async (AutoFishing, VIP, userId, minutes)
       fishMissed: 0,
       totalXu: 0,
       durabilityUsed: 0,
-      rodLevel: 0, // Will be updated when session completes
+      rodLevel: userRodLevel, // Use actual user rod level (min 1)
       efficiency: '0',
       status: 'active'
     });
