@@ -226,6 +226,7 @@ export const stopAutoFishingSession = async (AutoFishing, User, VIP, userId) => 
     
     const rodLevel = user.rodLevel || 1;
     const rod = getRodBenefits(rodLevel);
+    const currentRodDurability = user.rodDurability || rod.durability;
     
     // Calculate session duration
     const now = new Date();
@@ -246,7 +247,7 @@ export const stopAutoFishingSession = async (AutoFishing, User, VIP, userId) => 
     
     for (let i = 0; i < totalAttempts; i++) {
       // Check durability (stop if rod breaks)
-      const currentDurability = rod.durability - durabilityUsed;
+      const currentDurability = currentRodDurability - durabilityUsed;
       if (currentDurability <= 0) {
         console.log('🔧 Rod broke during auto-fishing session');
         break;
@@ -281,7 +282,7 @@ export const stopAutoFishingSession = async (AutoFishing, User, VIP, userId) => 
     
     // Update user balance and rod durability
     const newBalance = (user.balance || 0) + totalXu;
-    const newDurability = Math.max(0, rod.durability - durabilityUsed);
+    const newDurability = Math.max(0, currentRodDurability - durabilityUsed);
     
     await User.updateOne(
       { discordId: userId },
@@ -291,21 +292,42 @@ export const stopAutoFishingSession = async (AutoFishing, User, VIP, userId) => 
       }
     );
     
-    // Save session to database
-    await AutoFishing.create({
-      userId,
-      startTime: session.startTime,
-      endTime: actualEndTime,
-      duration: actualDuration,
-      totalAttempts,
-      fishCaught,
-      fishMissed,
-      totalXu,
-      durabilityUsed,
-      rodLevel,
-      efficiency: efficiency.toFixed(1),
-      status: 'completed' // Mark as completed
-    });
+    // Update existing database record instead of creating new one
+    if (session.dbId) {
+      await AutoFishing.updateOne(
+        { _id: session.dbId },
+        {
+          $set: {
+            endTime: actualEndTime,
+            duration: actualDuration,
+            totalAttempts,
+            fishCaught,
+            fishMissed,
+            totalXu,
+            durabilityUsed,
+            rodLevel,
+            efficiency: efficiency.toFixed(1),
+            status: 'completed'
+          }
+        }
+      );
+    } else {
+      // Fallback: create new record if dbId missing
+      await AutoFishing.create({
+        userId,
+        startTime: session.startTime,
+        endTime: actualEndTime,
+        duration: actualDuration,
+        totalAttempts,
+        fishCaught,
+        fishMissed,
+        totalXu,
+        durabilityUsed,
+        rodLevel,
+        efficiency: efficiency.toFixed(1),
+        status: 'completed'
+      });
+    }
     
     // Remove from active sessions
     activeSessions.delete(userId);

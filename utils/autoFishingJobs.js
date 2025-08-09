@@ -29,7 +29,7 @@ export const processExpiredAutoFishingSessions = async () => {
     const now = new Date();
     const expiredSessions = await AutoFishing.find({
       endTime: { $lte: now },
-      status: { $ne: 'completed' } // Only process if not already completed
+      status: 'active' // Only process active sessions
     });
 
     console.log(`📊 Found ${expiredSessions.length} expired sessions to process`);
@@ -41,25 +41,81 @@ export const processExpiredAutoFishingSessions = async () => {
       try {
         console.log(`⚡ Processing expired session for user: ${session.userId}`);
         
-        // Stop the session and calculate rewards
-        const result = await stopAutoFishingSession(AutoFishing, User, VIP, session.userId);
-        
-        if (result.success) {
-          // Mark the session as completed
-          await AutoFishing.updateOne(
-            { _id: session._id },
-            { status: 'completed' }
-          );
-          
-          processedCount++;
-          console.log(`✅ Completed session for user: ${session.userId}`);
-          console.log(`   Duration: ${result.duration} minutes`);
-          console.log(`   Fish caught: ${result.results.fishCaught}`);
-          console.log(`   Xu earned: ${result.results.totalXu}`);
-        } else {
-          console.log(`⚠️ Failed to process session for user: ${session.userId} - ${result.error}`);
-          errorCount++;
+        // Get user data to complete the session
+        const user = await User.findOne({ discordId: session.userId });
+        if (!user) {
+          console.log(`⚠️ User not found: ${session.userId}`);
+          continue;
         }
+
+        // Import calculation functions
+        const { getRodBenefits, calculateMissRate, simulateFishingAttempt } = await import('./autoFishingManager.js');
+        
+        const rodLevel = user.rodLevel || 1;
+        const rod = getRodBenefits(rodLevel);
+        const currentRodDurability = user.rodDurability || rod.durability;
+        
+        // Calculate session results
+        const actualDuration = Math.floor((session.endTime - session.startTime) / (1000 * 60));
+        const totalAttempts = actualDuration * 2; // 2 attempts per minute
+        
+        let fishCaught = 0;
+        let fishMissed = 0;
+        let totalXu = 0;
+        let durabilityUsed = 0;
+        
+        for (let i = 0; i < totalAttempts; i++) {
+          const currentDurability = currentRodDurability - durabilityUsed;
+          if (currentDurability <= 0) {
+            console.log('🔧 Rod broke during background session processing');
+            break;
+          }
+          
+          const attempt = simulateFishingAttempt(rodLevel);
+          durabilityUsed += attempt.durabilityUsed;
+          
+          if (attempt.missed) {
+            fishMissed++;
+          } else {
+            fishCaught++;
+            totalXu += attempt.fish.value;
+          }
+        }
+        
+        const efficiency = totalAttempts > 0 ? (fishCaught / totalAttempts) * 100 : 0;
+        const newDurability = Math.max(0, currentRodDurability - durabilityUsed);
+        
+        // Update user balance and rod durability
+        await User.updateOne(
+          { discordId: session.userId },
+          { 
+            $inc: { balance: totalXu },
+            $set: { rodDurability: newDurability }
+          }
+        );
+        
+        // Update session record
+        await AutoFishing.updateOne(
+          { _id: session._id },
+          {
+            $set: {
+              totalAttempts,
+              fishCaught,
+              fishMissed,
+              totalXu,
+              durabilityUsed,
+              rodLevel,
+              efficiency: efficiency.toFixed(1),
+              status: 'completed'
+            }
+          }
+        );
+        
+        processedCount++;
+        console.log(`✅ Completed background session for user: ${session.userId}`);
+        console.log(`   Duration: ${actualDuration} minutes`);
+        console.log(`   Fish caught: ${fishCaught}`);
+        console.log(`   Xu earned: ${totalXu}`);
         
       } catch (sessionError) {
         console.error(`❌ Error processing session ${session._id}:`, sessionError);
