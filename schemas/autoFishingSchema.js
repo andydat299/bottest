@@ -9,6 +9,7 @@ const autoFishingSchema = new mongoose.Schema({
   userId: {
     type: String,
     required: true
+    // Removed index: true to avoid duplicates
   },
   startTime: {
     type: Date,
@@ -62,19 +63,22 @@ const autoFishingSchema = new mongoose.Schema({
     type: String,
     enum: ['active', 'completed', 'expired', 'cancelled'],
     default: 'active'
+    // Removed index: true to avoid duplicates
   },
   createdAt: {
     type: Date,
     default: Date.now
+    // Removed index: true to avoid duplicates
   }
 }, {
   timestamps: true
 });
 
-// Create indexes separately to avoid duplicates
-autoFishingSchema.index({ userId: 1, startTime: -1 });
-autoFishingSchema.index({ status: 1, endTime: 1 });
-autoFishingSchema.index({ createdAt: -1 });
+// ✅ Create all indexes separately to avoid duplicates
+autoFishingSchema.index({ userId: 1, startTime: -1 });  // Query by user and time
+autoFishingSchema.index({ status: 1, endTime: 1 });     // Background job queries
+autoFishingSchema.index({ createdAt: -1 });             // Recent records
+autoFishingSchema.index({ userId: 1, status: 1 });      // User active sessions
 
 // Calculate total fishing time for a user
 autoFishingSchema.statics.getTotalTime = function(userId, startDate = null) {
