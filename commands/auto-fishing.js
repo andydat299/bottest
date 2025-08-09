@@ -141,9 +141,17 @@ async function handleStop(interaction, AutoFishing, User, VIP) {
   // Add miss rate info if available
   if (fishingResults.totalAttempts > 0) {
     const actualMissRate = ((fishingResults.fishMissed / fishingResults.totalAttempts) * 100).toFixed(1);
+    const expectedMissRate = fishingResults.missRateInfo?.finalMissRate || 'N/A';
+    
+    embed.addFields({
+      name: '🎯 Miss Rate Analysis',
+      value: `**Expected Miss Rate:** ${expectedMissRate}%\n**Actual Miss Rate:** ${actualMissRate}%\n**Rod Miss Reduction:** -${fishingResults.missRateInfo?.rodMissReduction || 0}%\n**Base Miss Rate:** ${fishingResults.missRateInfo?.baseMissRate || 25}%`,
+      inline: false
+    });
+    
     embed.addFields({
       name: '📊 Thống Kê Chi Tiết',
-      value: `**Tỷ lệ hụt thực tế:** ${actualMissRate}%\n**Cá thành công:** ${fishingResults.fishCaught}/${fishingResults.totalAttempts}\n**Tỷ lệ thành công:** ${fishingResults.efficiency.toFixed(1)}%`,
+      value: `**Cá thành công:** ${fishingResults.fishCaught}/${fishingResults.totalAttempts}\n**Tỷ lệ thành công:** ${fishingResults.efficiency.toFixed(1)}%\n**Durability sử dụng:** ${fishingResults.durabilityUsed || 0}`,
       inline: false
     });
   }
@@ -272,7 +280,7 @@ async function handleStatus(interaction, AutoFishing, VIP) {
   // Usage tips
   embed.addFields({
     name: '💡 Hướng Dẫn Sử Dụng',
-    value: '• `/auto-fishing start <phút>` - Bắt đầu\n• `/auto-fishing stop` - Dừng và nhận thưởng\n• `/auto-fishing status` - Xem trạng thái\n• Giới hạn reset vào 00:00 hàng ngày\n• **Tỷ lệ hụt giống fishing thủ công**',
+    value: '• `/auto-fishing start <phút>` - Bắt đầu\n• `/auto-fishing stop` - Dừng và nhận thưởng\n• `/auto-fishing status` - Xem trạng thái\n• Giới hạn reset vào 00:00 hàng ngày\n• **🎯 Auto-fishing có miss rate như fishing thủ công**\n• **🔧 Rod level cao = ít hụt cá hơn**',
     inline: false
   });
 
