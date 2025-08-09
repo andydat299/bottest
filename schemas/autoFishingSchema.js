@@ -8,8 +8,7 @@ import mongoose from 'mongoose';
 const autoFishingSchema = new mongoose.Schema({
   userId: {
     type: String,
-    required: true,
-    index: true
+    required: true
   },
   startTime: {
     type: Date,
@@ -62,21 +61,20 @@ const autoFishingSchema = new mongoose.Schema({
   status: {
     type: String,
     enum: ['active', 'completed', 'expired', 'cancelled'],
-    default: 'active',
-    index: true
+    default: 'active'
   },
   createdAt: {
     type: Date,
-    default: Date.now,
-    index: true
+    default: Date.now
   }
 }, {
   timestamps: true
 });
 
-// Indexes for performance
+// Create indexes separately to avoid duplicates
 autoFishingSchema.index({ userId: 1, startTime: -1 });
-autoFishingSchema.index({ userId: 1, createdAt: -1 });
+autoFishingSchema.index({ status: 1, endTime: 1 });
+autoFishingSchema.index({ createdAt: -1 });
 
 // Calculate total fishing time for a user
 autoFishingSchema.statics.getTotalTime = function(userId, startDate = null) {

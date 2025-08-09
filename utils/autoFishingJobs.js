@@ -3,9 +3,27 @@
  * Handle expired sessions and cleanup
  */
 
-import { stopAutoFishingSession, getAutoFishingStatus } from './autoFishingManager.js';
+// Remove the problematic import that causes circular dependency
+// import { stopAutoFishingSession, getAutoFishingStatus } from './autoFishingManager.js';
 
 let jobRunning = false;
+
+/**
+ * Initialize auto-fishing background jobs
+ * This is the main function to call from index.js
+ */
+export const initJobs = async () => {
+  console.log('🚀 Initializing auto-fishing background jobs...');
+  
+  try {
+    // Start the periodic jobs
+    startAutoFishingJobs();
+    console.log('✅ Auto-fishing background jobs initialized successfully');
+  } catch (error) {
+    console.error('❌ Failed to initialize auto-fishing jobs:', error);
+    throw error;
+  }
+};
 
 /**
  * Process expired auto-fishing sessions
@@ -180,6 +198,11 @@ export const startAutoFishingJobs = () => {
   console.log('   ⚡ Expired sessions: Every 30 seconds');
   console.log('   🧹 Cleanup old records: Every 24 hours');
 };
+
+/**
+ * Alternative export for backward compatibility
+ */
+export const initializeAutoFishingJobs = initJobs;
 
 /**
  * Stop auto-fishing background jobs (for graceful shutdown)
