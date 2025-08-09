@@ -111,7 +111,7 @@ export const FISHING_RODS = {
     cost: 400000, // 400K xu (+100K from level 10)
     missReduction: 19,
     rareBoost: 110,
-    durability: 500,
+    durability: 300,
     tier: 'Legendary',
     vipRequired: 'bronze', // VIP Bronze required
     description: 'Cần câu chứa đựng sức mạnh của toàn bộ vũ trụ'
@@ -121,7 +121,7 @@ export const FISHING_RODS = {
     cost: 550000, // 550K xu (+150K increment)
     missReduction: 20,
     rareBoost: 120,
-    durability: 550,
+    durability: 320,
     tier: 'Legendary',
     vipRequired: 'bronze', // VIP Bronze required
     description: 'Cần câu được tôi luyện bởi sấm sét'
@@ -131,7 +131,7 @@ export const FISHING_RODS = {
     cost: 750000, // 750K xu (+200K increment)
     missReduction: 21,
     rareBoost: 130,
-    durability: 600,
+    durability: 340,
     tier: 'Legendary',
     vipRequired: 'bronze', // VIP Bronze required
     description: 'Cần câu từ ngọn lửa địa ngục bất diệt'
@@ -141,7 +141,7 @@ export const FISHING_RODS = {
     cost: 1000000, // 1M xu (+250K increment)
     missReduction: 22,
     rareBoost: 140,
-    durability: 650,
+    durability: 360,
     tier: 'Legendary',
     vipRequired: 'bronze', // VIP Bronze required
     description: 'Cần câu từ băng vĩnh cửu không bao giờ tan'
@@ -151,7 +151,7 @@ export const FISHING_RODS = {
     cost: 1300000, // 1.3M xu (+300K increment)
     missReduction: 23,
     rareBoost: 150,
-    durability: 700,
+    durability: 380,
     tier: 'Legendary',
     vipRequired: 'bronze', // VIP Bronze required
     description: 'Cần câu tuyệt đẹp với màu sắc cầu vồng'
@@ -161,7 +161,7 @@ export const FISHING_RODS = {
     cost: 1650000, // 1.65M xu (+350K increment)
     missReduction: 24,
     rareBoost: 160,
-    durability: 800,
+    durability: 400,
     tier: 'Mythical',
     vipRequired: 'bronze', // VIP Bronze required
     description: 'Cần câu hoàng gia chỉ dành cho vua chúa'
@@ -171,7 +171,7 @@ export const FISHING_RODS = {
     cost: 2050000, // 2.05M xu (+400K increment) - Near max
     missReduction: 25,
     rareBoost: 170,
-    durability: 900,
+    durability: 420,
     tier: 'Mythical',
     vipRequired: 'bronze', // VIP Bronze required
     description: 'Cần câu thiên thần với phước lành từ trời cao'
@@ -181,7 +181,7 @@ export const FISHING_RODS = {
     cost: 2000000, // 2M xu (capped at max)
     missReduction: 26,
     rareBoost: 180,
-    durability: 1000,
+    durability: 440,
     tier: 'Mythical',
     vipRequired: 'bronze', // VIP Bronze required
     description: 'Cần câu ác quỷ với sức mạnh đen tối'
@@ -191,7 +191,7 @@ export const FISHING_RODS = {
     cost: 2000000, // 2M xu (capped at max)
     missReduction: 27,
     rareBoost: 190,
-    durability: 1200,
+    durability: 460,
     tier: 'Mythical',
     vipRequired: 'bronze', // VIP Bronze required
     description: 'Cần câu tạo hóa có thể thay đổi thực tại'
@@ -201,7 +201,7 @@ export const FISHING_RODS = {
     cost: 2000000, // 2M xu (maximum price)
     missReduction: 28,
     rareBoost: 200,
-    durability: 1500,
+    durability: 500,
     tier: 'Transcendent',
     vipRequired: 'bronze', // VIP Bronze required
     description: 'Cần câu tối thượng vượt qua mọi giới hạn - Đỉnh cao nghệ thuật câu cá'
