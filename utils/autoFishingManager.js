@@ -95,14 +95,26 @@ export const simulateFishingAttempt = (rodLevel) => {
  */
 export const startAutoFishingSession = async (AutoFishing, VIP, userId, minutes) => {
   try {
-    // Check VIP permissions
+    // Check VIP permissions with detailed logging
+    console.log(`🔍 Auto-fishing VIP check for user: ${userId}`);
+    
     const vip = await VIP.findOne({ discordId: userId });
+    console.log(`📊 VIP database query result:`, vip);
+    
     const limits = getAutoFishingLimits(vip);
+    console.log(`🎯 Auto-fishing limits calculated:`, limits);
     
     if (!limits.enabled) {
+      console.log(`❌ Auto-fishing access denied:`, {
+        vipExists: !!vip,
+        vipActive: vip?.isActive,
+        vipTier: vip?.tier,
+        limitsEnabled: limits.enabled
+      });
+      
       return {
         success: false,
-        error: 'Cần VIP Vàng hoặc cao hơn để sử dụng Auto-Fishing!'
+        error: `Cần VIP Vàng hoặc cao hơn để sử dụng Auto-Fishing!\n\n**Debug Info:**\n• VIP Record: ${vip ? 'Found' : 'Not found'}\n• VIP Active: ${vip?.isActive || 'N/A'}\n• VIP Tier: ${vip?.tier || 'N/A'}\n• Required: gold/diamond/platinum\n\nUse \`/debug-vip-autofish\` for detailed analysis.`
       };
     }
     
@@ -155,8 +167,24 @@ export const startAutoFishingSession = async (AutoFishing, VIP, userId, minutes)
       status: 'active'
     };
     
+    // Create database record for background job tracking
+    const dbSession = await AutoFishing.create({
+      userId,
+      startTime,
+      endTime,
+      duration: minutes,
+      totalAttempts: 0,
+      fishCaught: 0,
+      fishMissed: 0,
+      totalXu: 0,
+      durabilityUsed: 0,
+      rodLevel: 0, // Will be updated when session completes
+      efficiency: '0',
+      status: 'active'
+    });
+    
     // Store in memory for active tracking
-    activeSessions.set(userId, session);
+    activeSessions.set(userId, { ...session, dbId: dbSession._id });
     
     return {
       success: true,
@@ -275,7 +303,8 @@ export const stopAutoFishingSession = async (AutoFishing, User, VIP, userId) => 
       totalXu,
       durabilityUsed,
       rodLevel,
-      efficiency: efficiency.toFixed(1)
+      efficiency: efficiency.toFixed(1),
+      status: 'completed' // Mark as completed
     });
     
     // Remove from active sessions

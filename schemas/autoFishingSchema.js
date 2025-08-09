@@ -59,6 +59,12 @@ const autoFishingSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  status: {
+    type: String,
+    enum: ['active', 'completed', 'expired', 'cancelled'],
+    default: 'active',
+    index: true
+  },
   createdAt: {
     type: Date,
     default: Date.now,
