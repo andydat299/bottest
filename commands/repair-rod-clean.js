@@ -3,19 +3,8 @@ import { getRodBenefits } from '../utils/rodManager.js';
 
 export default {
   data: new SlashCommandBuilder()
-    .setName('repair-rod-fixed')
-    .setDescription('🔧 Sửa chữa cần câu (version fixed)')
-    // Optional options only
-    .addStringOption(option =>
-      option.setName('type')
-        .setDescription('Loại sửa chữa')
-        .setRequired(false)
-        .addChoices(
-          { name: 'Hoàn toàn (100%)', value: 'full' },
-          { name: 'Một phần (50%)', value: 'partial' },
-          { name: 'Tối thiểu (25%)', value: 'minimal' }
-        )
-    ),
+    .setName('repair-rod-clean')
+    .setDescription('🔧 Sửa chữa cần câu hoàn toàn (no options)'),
 
   async execute(interaction) {
     await interaction.deferReply();
@@ -33,14 +22,11 @@ export default {
       const rodLevel = user.rodLevel || 1;
       const currentDurability = user.rodDurability || 0;
       const userBalance = user.balance || 0;
-      const repairType = interaction.options.getString('type') || 'full';
 
       // Get CORRECT rod benefits
       const currentRod = getRodBenefits(rodLevel);
       
       // FIXED: Use correct max durability based on rod level
-      const correctMaxDurability = getCorrectMaxDurability(rodLevel);
-      
       function getCorrectMaxDurability(level) {
         const durabilityMap = {
           1: 100, 2: 120, 3: 140, 4: 160, 5: 180,
@@ -51,8 +37,7 @@ export default {
         return durabilityMap[level] || 100;
       }
 
-      // Calculate repair amounts
-      const maxDurability = correctMaxDurability; // Use CORRECT max durability
+      const maxDurability = getCorrectMaxDurability(rodLevel);
       const durabilityNeeded = maxDurability - currentDurability;
 
       if (durabilityNeeded <= 0) {
@@ -63,34 +48,11 @@ export default {
         });
       }
 
-      // Calculate repair options
-      const repairOptions = {
-        full: {
-          percentage: 100,
-          durabilityToAdd: durabilityNeeded,
-          cost: durabilityNeeded * 10,
-          description: 'Sửa chữa hoàn toàn về 100%'
-        },
-        partial: {
-          percentage: 50,
-          durabilityToAdd: Math.ceil(durabilityNeeded * 0.5),
-          cost: Math.ceil(durabilityNeeded * 0.5) * 8,
-          description: 'Sửa chữa 50% độ bền còn thiếu'
-        },
-        minimal: {
-          percentage: 25,
-          durabilityToAdd: Math.ceil(durabilityNeeded * 0.25),
-          cost: Math.ceil(durabilityNeeded * 0.25) * 6,
-          description: 'Sửa chữa 25% độ bền còn thiếu'
-        }
-      };
-
-      const selectedRepair = repairOptions[repairType];
-      const newDurability = currentDurability + selectedRepair.durabilityToAdd;
-      const finalDurability = Math.min(newDurability, maxDurability); // Ensure not over max
+      // Full repair calculation
+      const repairCost = durabilityNeeded * 10;
 
       // Check if user can afford
-      if (userBalance < selectedRepair.cost) {
+      if (userBalance < repairCost) {
         const embed = new EmbedBuilder()
           .setTitle('❌ **Không Đủ Xu Để Sửa Chữa**')
           .setDescription(`**${interaction.user.username}** - Thông tin sửa chữa`)
@@ -98,20 +60,20 @@ export default {
           .addFields({
             name: '🎣 **Cần Câu Hiện Tại**',
             value: `**${currentRod.name}** (Level ${rodLevel})\n` +
-                   `🔧 **Độ bền:** ${currentDurability}/${maxDurability} (${Math.round((currentDurability/maxDurability)*100)}%)`,
+                   `🔧 **Độ bền:** ${currentDurability}/${maxDurability} (${Math.round((currentDurability/maxDurability)*100)}%)\n` +
+                   `**Tier:** ${currentRod.tier}`,
             inline: false
           })
           .addFields({
-            name: '💰 **Chi Phí Sửa Chữa**',
-            value: `**${selectedRepair.description}**\n` +
-                   `💸 **Chi phí:** ${selectedRepair.cost.toLocaleString()} xu\n` +
+            name: '💰 **Chi Phí Sửa Chữa Hoàn Toàn**',
+            value: `💸 **Chi phí:** ${repairCost.toLocaleString()} xu\n` +
                    `💰 **Số dư:** ${userBalance.toLocaleString()} xu\n` +
-                   `❌ **Thiếu:** ${(selectedRepair.cost - userBalance).toLocaleString()} xu`,
+                   `❌ **Thiếu:** ${(repairCost - userBalance).toLocaleString()} xu`,
             inline: false
           })
           .addFields({
             name: '💡 **Gợi Ý**',
-            value: '• Câu cá để kiếm thêm xu\n• Chọn loại sửa chữa rẻ hơn\n• Sử dụng `/repair-rod-fixed type:minimal`',
+            value: '• Câu cá để kiếm thêm xu: `/fish`\n• Xem trạng thái rod: `/rod-status`\n• Bán cá để có xu: `/sell-fish`',
             inline: false
           })
           .setTimestamp();
@@ -119,15 +81,15 @@ export default {
         return await interaction.editReply({ embeds: [embed] });
       }
 
-      // Perform repair
-      user.rodDurability = finalDurability;
-      user.balance -= selectedRepair.cost;
+      // Perform full repair
+      user.rodDurability = maxDurability;
+      user.balance -= repairCost;
       await user.save();
 
       // Success embed
       const embed = new EmbedBuilder()
         .setTitle('🔧 **Sửa Chữa Cần Câu Thành Công**')
-        .setDescription(`**${interaction.user.username}** - Kết quả sửa chữa`)
+        .setDescription(`**${interaction.user.username}** - Kết quả sửa chữa hoàn toàn`)
         .setColor('#00ff00')
         .addFields({
           name: '🎣 **Cần Câu**',
@@ -138,27 +100,35 @@ export default {
         .addFields({
           name: '🔧 **Độ Bền**',
           value: `**Trước:** ${currentDurability}/${maxDurability}\n` +
-                 `**Sau:** ${finalDurability}/${maxDurability}\n` +
-                 `**Tăng:** +${selectedRepair.durabilityToAdd}`,
+                 `**Sau:** ${maxDurability}/${maxDurability}\n` +
+                 `**Tăng:** +${durabilityNeeded}`,
           inline: true
         })
         .addFields({
           name: '💰 **Chi Phí**',
-          value: `**Loại:** ${selectedRepair.description}\n` +
-                 `**Chi phí:** ${selectedRepair.cost.toLocaleString()} xu\n` +
+          value: `**Loại:** Sửa chữa hoàn toàn (100%)\n` +
+                 `**Chi phí:** ${repairCost.toLocaleString()} xu\n` +
                  `**Số dư còn:** ${user.balance.toLocaleString()} xu`,
           inline: false
         });
 
-      // Add status bar
-      const durabilityPercent = Math.round((finalDurability / maxDurability) * 100);
-      const statusBar = '█'.repeat(Math.floor(durabilityPercent / 10)) + '░'.repeat(10 - Math.floor(durabilityPercent / 10));
+      // Add status bar - always 100% after full repair
+      const statusBar = '██████████';
       
       embed.addFields({
         name: '📊 **Trạng Thái Mới**',
         value: `${statusBar}\n` +
-               `**${finalDurability}/${maxDurability}** (${durabilityPercent}%)\n` +
-               `${durabilityPercent >= 80 ? '✅ Tuyệt vời' : durabilityPercent >= 50 ? '🔶 Ổn định' : '⚠️ Cần theo dõi'}`,
+               `**${maxDurability}/${maxDurability}** (100%)\n` +
+               `✅ Tuyệt vời - Cần câu như mới!`,
+        inline: false
+      });
+
+      embed.addFields({
+        name: '🎯 **Thông Tin Bổ Sung**',
+        value: `**Rod benefits đã được fix:**\n` +
+               `• Max durability: ${maxDurability} (correct for level ${rodLevel})\n` +
+               `• Repair cost: 10 xu per durability point\n` +
+               `• Ready for fishing!`,
         inline: false
       });
 
@@ -167,18 +137,18 @@ export default {
       await interaction.editReply({ embeds: [embed] });
 
       // Debug log
-      console.log(`🔧 REPAIR SUCCESS:`, {
+      console.log(`🔧 REPAIR SUCCESS (CLEAN):`, {
         user: interaction.user.username,
         rodLevel,
         durabilityBefore: currentDurability,
-        durabilityAfter: finalDurability,
+        durabilityAfter: maxDurability,
         maxDurability,
-        cost: selectedRepair.cost,
-        type: repairType
+        cost: repairCost,
+        correctMaxDurability: maxDurability
       });
 
     } catch (error) {
-      console.error('❌ Repair rod error:', error);
+      console.error('❌ Repair rod clean error:', error);
       
       await interaction.editReply({
         content: `❌ **Có lỗi khi sửa chữa cần câu:**\n\`\`\`${error.message}\`\`\``
