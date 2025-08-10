@@ -11,7 +11,13 @@ import {
 import { createGameEmbed, createGameButtons } from '../commands/xidach.js';
 import { handleEvalButtons } from '../commands/evalvm.js';
 import { handleWheelBetModal, handleWheelGameButtons } from '../commands/wheel.js';
-import { Events, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
+import { 
+  Events, 
+  EmbedBuilder, 
+  ActionRowBuilder, 
+  ButtonBuilder, 
+  ButtonStyle 
+} from 'discord.js';
 
 export default {
   name: Events.InteractionCreate,
@@ -1222,6 +1228,7 @@ async function handleVIPPurchase(interaction) {
     // Dynamic import để tránh lỗi startup
     const { VIP_TIERS, getOrCreateVIP } = await import('../utils/vip.js');
     const { User } = await import('../schemas/userSchema.js');
+    const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = await import('discord.js');
     
     const tierInfo = VIP_TIERS[tier];
     if (!tierInfo) {
