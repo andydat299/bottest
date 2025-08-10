@@ -70,6 +70,10 @@ export default {
         });
       }
 
+      // Trừ thời gian ngay từ đầu để tránh lỗi
+      user.autoFishingToday.minutes += duration;
+      await user.save();
+
       // Bắt đầu tiến trình câu cá
       const startTime = Date.now();
       const endTime = startTime + (duration * 60 * 1000);
@@ -148,8 +152,7 @@ export default {
           user.fish.set(fishType, (user.fish.get(fishType) || 0) + 1);
         }
 
-        // Cập nhật quota auto-fishing (trừ thời gian đã sử dụng)
-        user.autoFishingToday.minutes += duration;
+        // Lưu kết quả (thời gian đã được trừ từ đầu)
         await user.save();
 
         // Kết quả hoàn thành
