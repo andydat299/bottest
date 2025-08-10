@@ -7,6 +7,12 @@ function getTodayDateString() {
   return `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
 }
 
+// Map để theo dõi users đang auto-fishing
+const activeAutoFishing = new Map();
+
+// Export để các lệnh khác có thể sử dụng
+export { activeAutoFishing };
+
 export default {
   data: new SlashCommandBuilder()
     .setName('auto-fishing')
@@ -19,6 +25,15 @@ export default {
         .setMaxValue(720)),
   async execute(interaction) {
     try {
+      // Kiểm tra nếu user đang auto-fishing
+      if (activeAutoFishing.has(interaction.user.id)) {
+        await interaction.reply({
+          content: '❌ Bạn đang có phiên auto-fishing khác đang chạy! Vui lòng chờ hoàn thành.',
+          flags: 64
+        });
+        return;
+      }
+
       // Kiểm tra VIP
       const vip = await getOrCreateVIP(interaction.user.id, interaction.user.username);
       if (!vip || !vip.isVipActive()) {
@@ -74,6 +89,13 @@ export default {
       user.autoFishingToday.minutes += duration;
       await user.save();
 
+      // Đánh dấu user đang auto-fishing
+      activeAutoFishing.set(interaction.user.id, {
+        startTime: Date.now(),
+        duration: duration,
+        endTime: Date.now() + (duration * 60 * 1000)
+      });
+
       // Bắt đầu tiến trình câu cá
       const startTime = Date.now();
       const endTime = startTime + (duration * 60 * 1000);
@@ -128,6 +150,8 @@ export default {
 
         if (currentTime >= endTime) {
           clearInterval(updateInterval);
+          // Xóa user khỏi danh sách đang auto-fishing
+          activeAutoFishing.delete(interaction.user.id);
           await completeAutoFishing();
         }
       }, 10000); // Cập nhật mỗi 10 giây
@@ -178,9 +202,11 @@ export default {
 
     } catch (error) {
       console.error('Auto-fishing command error:', error);
+      // Xóa user khỏi danh sách nếu có lỗi
+      activeAutoFishing.delete(interaction.user.id);
       await interaction.reply({
         content: '❌ Có lỗi xảy ra với tự động câu cá. Vui lòng thử lại!',
-        ephemeral: true
+        flags: 64
       });
     }
   }
