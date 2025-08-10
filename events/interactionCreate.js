@@ -157,6 +157,19 @@ export default {
           return;
         }
 
+        // Xử lý VIP purchase buttons
+        if (interaction.customId.startsWith('buy_vip_')) {
+          await handleVIPPurchase(interaction);
+        }
+        // Xử lý purchase confirmation buttons
+        else if (interaction.customId.startsWith('confirm_vip_')) {
+          await handleVIPConfirmation(interaction);
+        }
+        // Xử lý purchase cancellation
+        else if (interaction.customId === 'cancel_vip_purchase') {
+          await handleVIPCancellation(interaction);
+        }
+
         // Xử lý các button khác (fish, reset, etc.)
         // Reset buttons đã được xử lý trong reset command collector
         // Fish buttons đã được xử lý trong fish command collector
@@ -1194,6 +1207,189 @@ async function handleWithdrawButtons(interaction) {
     await interaction.reply({
       content: `❌ **Có lỗi xảy ra khi xử lý yêu cầu!**\n\`\`\`${error.message}\`\`\``,
       ephemeral: true
+    });
+  }
+}
+
+// VIP purchase handlers
+async function handleVIPPurchase(interaction) {
+  try {
+    const tier = interaction.customId.replace('buy_vip_', '');
+    
+    // Dynamic import để tránh lỗi startup
+    const { VIP_TIERS, getOrCreateVIP } = await import('../utils/vip.js');
+    const { User } = await import('../schemas/userSchema.js');
+    
+    const tierInfo = VIP_TIERS[tier];
+    if (!tierInfo) {
+      await interaction.reply({
+        content: '❌ Gói VIP không hợp lệ!',
+        ephemeral: true
+      });
+      return;
+    }
+    
+    // Kiểm tra user và coins
+    const user = await User.findOne({ discordId: interaction.user.id });
+    if (!user) {
+      await interaction.reply({
+        content: '❌ Không tìm thấy thông tin user. Hãy sử dụng lệnh khác trước!',
+        ephemeral: true
+      });
+      return;
+    }
+    
+    const userMoney = user.money || 0;
+    if (userMoney < tierInfo.price) {
+      const shortfall = tierInfo.price - userMoney;
+      const embed = new EmbedBuilder()
+        .setTitle('💸 Không Đủ Coins')
+        .setDescription(`Bạn không đủ coins để mua **${tierInfo.name}**!`)
+        .setColor('#FF0000')
+        .addFields(
+          { name: '💰 Giá gói VIP', value: `${tierInfo.price.toLocaleString()} coins`, inline: true },
+          { name: '💳 Coins hiện có', value: `${userMoney.toLocaleString()} coins`, inline: true },
+          { name: '💸 Thiếu', value: `${shortfall.toLocaleString()} coins`, inline: true },
+          { name: '💡 Cách kiếm coins', value: 'Sử dụng `/fish`, `/daily` để kiếm thêm coins!', inline: false }
+        )
+        .setTimestamp();
+
+      await interaction.reply({ embeds: [embed], ephemeral: true });
+      return;
+    }
+    
+    // Tạo confirmation
+    const embed = new EmbedBuilder()
+      .setTitle('🛒 Xác Nhận Mua VIP')
+      .setDescription(`Bạn có chắc muốn mua **${tierInfo.name}**?`)
+      .setColor(tierInfo.benefits.color)
+      .addFields(
+        { name: '💰 Giá', value: `${tierInfo.price.toLocaleString()} coins`, inline: true },
+        { name: '💳 Coins sau khi mua', value: `${(userMoney - tierInfo.price).toLocaleString()} coins`, inline: true },
+        { name: '⏱️ Thời hạn', value: tier === 'lifetime' ? 'Vĩnh viễn' : `${tierInfo.duration} ngày`, inline: true },
+        { name: '🎁 Lợi ích', value: [
+          `💰 Coin bonus: x${tierInfo.benefits.coinMultiplier}`,
+          `🎣 Fishing bonus: x${tierInfo.benefits.fishingBonus}`,
+          `🤖 Auto fishing: ${tierInfo.benefits.autoFishingTime >= 60 ? Math.floor(tierInfo.benefits.autoFishingTime/60) + ' giờ' : tierInfo.benefits.autoFishingTime + ' phút'}/ngày`
+        ].join('\n'), inline: false }
+      )
+      .setFooter({ text: 'Giao dịch không thể hoàn tác!' })
+      .setTimestamp();
+
+    const confirmRow = new ActionRowBuilder()
+      .addComponents(
+        new ButtonBuilder()
+          .setCustomId(`confirm_vip_${tier}`)
+          .setLabel('✅ Xác Nhận Mua')
+          .setStyle(ButtonStyle.Success),
+        new ButtonBuilder()
+          .setCustomId('cancel_vip_purchase')
+          .setLabel('❌ Hủy Bỏ')
+          .setStyle(ButtonStyle.Secondary)
+      );
+
+    await interaction.reply({ 
+      embeds: [embed], 
+      components: [confirmRow], 
+      ephemeral: true 
+    });
+    
+  } catch (error) {
+    console.error('VIP purchase error:', error);
+    await interaction.reply({
+      content: '❌ Có lỗi xảy ra khi xử lý mua VIP!',
+      ephemeral: true
+    });
+  }
+}
+
+async function handleVIPConfirmation(interaction) {
+  try {
+    const tier = interaction.customId.replace('confirm_vip_', '');
+    
+    const { VIP_TIERS, purchaseVIP } = await import('../utils/vip.js');
+    const { User } = await import('../schemas/userSchema.js');
+    
+    const tierInfo = VIP_TIERS[tier];
+    
+    // Lấy user và kiểm tra lại coins
+    const user = await User.findOne({ discordId: interaction.user.id });
+    const userMoney = user.money || 0;
+    
+    if (userMoney < tierInfo.price) {
+      await interaction.update({
+        content: '❌ Không đủ coins! Giao dịch bị hủy.',
+        embeds: [],
+        components: []
+      });
+      return;
+    }
+    
+    // Trừ tiền khỏi user (giữ logic userSchema cũ)
+    user.money = userMoney - tierInfo.price;
+    await user.save();
+    
+    // Mua VIP
+    const result = await purchaseVIP(interaction.user.id, interaction.user.username, tier, 'coins');
+    
+    if (result.success) {
+      const successEmbed = new EmbedBuilder()
+        .setTitle('🎉 Mua VIP Thành Công!')
+        .setDescription(`Chúc mừng! Bạn đã mua **${tierInfo.name}** thành công!`)
+        .setColor('#00FF00')
+        .addFields(
+          { name: '👑 VIP Tier', value: tierInfo.name, inline: true },
+          { name: '⏱️ Thời hạn', value: tier === 'lifetime' ? 'Vĩnh viễn' : `${tierInfo.duration} ngày`, inline: true },
+          { name: '💳 Coins còn lại', value: `${user.money.toLocaleString()} coins`, inline: true },
+          { name: '🎁 Lợi ích VIP', value: 'VIP đã được kích hoạt! Sử dụng `/vip` để xem chi tiết.', inline: false }
+        )
+        .setFooter({ text: 'Cảm ơn bạn đã mua VIP!' })
+        .setTimestamp();
+
+      await interaction.update({ 
+        embeds: [successEmbed], 
+        components: [] 
+      });
+      
+      console.log(`VIP Purchase: ${interaction.user.username} bought ${tierInfo.name} for ${tierInfo.price} coins`);
+    } else {
+      await interaction.update({
+        content: `❌ ${result.message}`,
+        embeds: [],
+        components: []
+      });
+    }
+    
+  } catch (error) {
+    console.error('VIP confirmation error:', error);
+    await interaction.update({
+      content: '❌ Có lỗi xảy ra khi xử lý giao dịch!',
+      embeds: [],
+      components: []
+    });
+  }
+}
+
+async function handleVIPCancellation(interaction) {
+  try {
+    const embed = new EmbedBuilder()
+      .setTitle('❌ Giao Dịch Đã Hủy')
+      .setDescription('Bạn đã hủy giao dịch mua VIP.')
+      .setColor('#808080')
+      .setFooter({ text: 'Bạn có thể mua VIP bất cứ lúc nào!' })
+      .setTimestamp();
+
+    await interaction.update({ 
+      embeds: [embed], 
+      components: [] 
+    });
+    
+  } catch (error) {
+    console.error('VIP cancellation error:', error);
+    await interaction.update({
+      content: '❌ Có lỗi xảy ra!',
+      embeds: [],
+      components: []
     });
   }
 }
