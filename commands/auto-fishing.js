@@ -59,8 +59,20 @@ export default {
       }
 
       // Khởi tạo hoặc reset autoFishingToday nếu sang ngày mới
-      if (!user.autoFishingToday || user.autoFishingToday.date !== todayKey) {
+      if (!user.autoFishingToday) {
         user.autoFishingToday = { date: todayKey, minutes: 0 };
+      } else if (user.autoFishingToday.date !== todayKey) {
+        user.autoFishingToday = { date: todayKey, minutes: 0 };
+      }
+
+      // Nếu schema cũ không có autoFishingToday, tạo field tạm thời
+      if (!user.autoFishingToday) {
+        // Fallback: sử dụng field khác hoặc tạo object tạm
+        const tempKey = `autofish_${todayKey}`;
+        if (!user[tempKey]) {
+          user[tempKey] = 0;
+        }
+        user.autoFishingToday = { date: todayKey, minutes: user[tempKey] || 0 };
       }
 
       // Kiểm tra quota
@@ -87,6 +99,13 @@ export default {
 
       // Trừ thời gian ngay từ đầu để tránh lỗi
       user.autoFishingToday.minutes += duration;
+      
+      // Nếu sử dụng fallback field, cập nhật cả hai
+      const tempKey = `autofish_${todayKey}`;
+      if (user[tempKey] !== undefined) {
+        user[tempKey] = user.autoFishingToday.minutes;
+      }
+      
       await user.save();
 
       // Đánh dấu user đang auto-fishing
@@ -169,11 +188,64 @@ export default {
         user.money = (user.money || 0) + coinsEarned;
         user.fish = user.fish || new Map();
         
-        // Thêm cá vào inventory (giữ logic cũ)
-        const fishTypes = ['Cá chép', 'Cá rô', 'Cá trắm', 'Cá lóc'];
+        // Import fishtype để sử dụng fish data thực
+        let fishTypes = ['Cá chép', 'Cá rô', 'Cá trắm', 'Cá lóc']; // Fallback
+        try {
+          const fishModule = await import('../fishtype.js').catch(() => null);
+          if (fishModule && fishModule.fishtype) {
+            fishTypes = Object.keys(fishModule.fishtype);
+          }
+        } catch (error) {
+          console.log('Không thể load fishtype, sử dụng default fish list');
+        }
+        
+        // Thêm cá vào inventory với weighted random dựa trên rarity
+        const caughtFish = {};
         for (let i = 0; i < fishCaught; i++) {
-          const fishType = fishTypes[Math.floor(Math.random() * fishTypes.length)];
-          user.fish.set(fishType, (user.fish.get(fishType) || 0) + 1);
+          let selectedFish;
+          
+          try {
+            const fishModule = await import('../fishtype.js').catch(() => null);
+            if (fishModule && fishModule.fishtype) {
+              // Sử dụng weighted random dựa trên rarity
+              const fishEntries = Object.entries(fishModule.fishtype);
+              const weights = fishEntries.map(([name, data]) => {
+                const rarity = data.rarity || 'common';
+                switch (rarity) {
+                  case 'legendary': return 1;
+                  case 'epic': return 3;
+                  case 'rare': return 10;
+                  case 'uncommon': return 25;
+                  case 'common': 
+                  default: return 60;
+                }
+              });
+              
+              const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
+              let random = Math.random() * totalWeight;
+              
+              for (let j = 0; j < fishEntries.length; j++) {
+                random -= weights[j];
+                if (random <= 0) {
+                  selectedFish = fishEntries[j][0];
+                  break;
+                }
+              }
+            }
+          } catch (error) {
+            console.log('Error in weighted selection, using random');
+          }
+          
+          // Fallback nếu không có fishtype
+          if (!selectedFish) {
+            selectedFish = fishTypes[Math.floor(Math.random() * fishTypes.length)];
+          }
+          
+          // Cập nhật user.fish (logic cũ)
+          user.fish.set(selectedFish, (user.fish.get(selectedFish) || 0) + 1);
+          
+          // Track cho hiển thị
+          caughtFish[selectedFish] = (caughtFish[selectedFish] || 0) + 1;
         }
 
         // Lưu kết quả (thời gian đã được trừ từ đầu)
@@ -199,6 +271,14 @@ export default {
 
         await interaction.editReply({ embeds: [completedEmbed] });
       }
+
+      // Cleanup khi có lỗi hoặc user rời
+      setTimeout(() => {
+        if (activeAutoFishing.has(interaction.user.id)) {
+          activeAutoFishing.delete(interaction.user.id);
+          console.log(`Cleaned up auto-fishing session for ${interaction.user.username}`);
+        }
+      }, (duration + 1) * 60 * 1000); // Cleanup sau duration + 1 phút
 
     } catch (error) {
       console.error('Auto-fishing command error:', error);
