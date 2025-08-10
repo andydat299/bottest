@@ -40,7 +40,7 @@ export const VIP_TIERS = {
       fishingBonus: 1.5,
       dailyBonus: 2.0,
       workBonus: 1.5,
-      autoFishingTime: 360,
+      autoFishingTime: 720,
       color: '#FF6B35'
     }
   },
