@@ -11,16 +11,10 @@ import {
 import { createGameEmbed, createGameButtons } from '../commands/xidach.js';
 import { handleEvalButtons } from '../commands/evalvm.js';
 import { handleWheelBetModal, handleWheelGameButtons } from '../commands/wheel.js';
-import { 
-  EmbedBuilder, 
-  ActionRowBuilder, 
-  ModalBuilder, 
-  TextInputBuilder, 
-  TextInputStyle 
-} from 'discord.js';
+import { Events, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
 
 export default {
-  name: 'interactionCreate',
+  name: Events.InteractionCreate,
   async execute(interaction) {
     // Xử lý slash commands
     if (interaction.isChatInputCommand()) {
@@ -31,7 +25,16 @@ export default {
         await command.execute(interaction);
       } catch (err) {
         console.error(err);
-        await interaction.reply({ content: '❌ Lỗi khi thực thi lệnh.' });
+        const replyOptions = { 
+          content: 'Có lỗi xảy ra khi thực thi lệnh!',
+          flags: 64 // ephemeral flag
+        };
+        
+        if (interaction.replied || interaction.deferred) {
+          await interaction.followUp(replyOptions);
+        } else {
+          await interaction.reply(replyOptions);
+        }
       }
       return;
     }
@@ -61,12 +64,12 @@ export default {
           if (command) {
             await interaction.reply({
               content: `🎯 **${command.cmd}**\n📖 ${command.desc}\n\n� **Cách sử dụng:** Nhấn vào lệnh màu xanh ở trên hoặc gõ \`/${commandName}\` trong chat!`,
-              ephemeral: true
+              flags: 64
             });
           } else {
             await interaction.reply({
               content: '❌ Không tìm thấy lệnh tương ứng.',
-              ephemeral: true
+              flags: 64
             });
           }
           return;
@@ -180,7 +183,7 @@ export default {
         if (!interaction.replied && !interaction.deferred) {
           await interaction.reply({ 
             content: '❌ Có lỗi xảy ra với nút bấm.',
-            ephemeral: true 
+            flags: 64
           });
         }
       }
@@ -206,7 +209,7 @@ export default {
         if (!interaction.replied && !interaction.deferred) {
           await interaction.reply({ 
             content: '❌ Có lỗi xảy ra với modal.',
-            ephemeral: true 
+            flags: 64
           });
         }
       }
@@ -222,7 +225,7 @@ async function handleBlackjackBetModal(interaction) {
   if (isNaN(betAmount) || betAmount <= 0) {
     await interaction.reply({
       content: '❌ Số xu cược không hợp lệ! Vui lòng nhập số nguyên dương.',
-      ephemeral: true
+      flags: 64
     });
     return;
   }
@@ -232,7 +235,7 @@ async function handleBlackjackBetModal(interaction) {
   if (!result.success) {
     await interaction.reply({
       content: result.message,
-      ephemeral: true
+      flags: 64
     });
     return;
   }
@@ -244,7 +247,7 @@ async function handleBlackjackBetModal(interaction) {
     content: result.message,
     embeds: [embed],
     components: buttons ? [buttons] : [],
-    ephemeral: true
+    flags: 64
   });
 }
 
@@ -258,7 +261,7 @@ async function handleBlackjackButtons(interaction) {
       if (!hitResult.success) {
         await interaction.reply({
           content: hitResult.message,
-          ephemeral: true
+          flags: 64
         });
         return;
       }
@@ -277,7 +280,7 @@ async function handleBlackjackButtons(interaction) {
       if (!standResult.success) {
         await interaction.reply({
           content: standResult.message,
-          ephemeral: true
+          flags: 64
         });
         return;
       }
@@ -374,7 +377,7 @@ async function handleGameBoardButtons(interaction) {
         .setColor('#ffdd57')
         .setFooter({ text: 'Ấn nút "Chơi Xì Dách" để bắt đầu!' });
 
-      await interaction.reply({ embeds: [rulesEmbed], ephemeral: true });
+      await interaction.reply({ embeds: [rulesEmbed], flags: 64 });
       break;
 
     case 'game_stats':
@@ -383,7 +386,7 @@ async function handleGameBoardButtons(interaction) {
       if (!stats) {
         await interaction.reply({
           content: '❌ Bạn chưa chơi game xì dách nào!',
-          ephemeral: true
+          flags: 64
         });
         return;
       }
@@ -400,7 +403,7 @@ async function handleGameBoardButtons(interaction) {
         .setThumbnail(interaction.user.displayAvatarURL())
         .setTimestamp();
 
-      await interaction.reply({ embeds: [statsEmbed], ephemeral: true });
+      await interaction.reply({ embeds: [statsEmbed], flags: 64 });
       break;
   }
 }
@@ -477,7 +480,7 @@ async function showCommandsHelp(interaction) {
     .setColor('#3498db')
     .setFooter({ text: 'Sử dụng /help [command] để xem chi tiết từng lệnh' });
 
-  await interaction.reply({ embeds: [embed], ephemeral: true });
+  await interaction.reply({ embeds: [embed], flags: 64 });
 }
 
 async function showServerStats(interaction) {
@@ -544,7 +547,7 @@ async function showServerStats(interaction) {
     })
     .setTimestamp();
 
-  await interaction.reply({ embeds: [embed], ephemeral: true });
+  await interaction.reply({ embeds: [embed], flags: 64 });
 }
 
 async function showGamesInfo(interaction) {
@@ -601,7 +604,7 @@ async function showGamesInfo(interaction) {
     .setColor('#f39c12')
     .setFooter({ text: 'Chơi có trách nhiệm và tận hưởng!' });
 
-  await interaction.reply({ embeds: [embed], ephemeral: true });
+  await interaction.reply({ embeds: [embed], flags: 64 });
 }
 
 // Helper function để format uptime (duplicate, có thể move ra utils)
@@ -639,7 +642,7 @@ async function handleWithdrawStatusButton(interaction) {
     if (!request) {
       return await interaction.reply({
         content: '📝 **Không có yêu cầu đang chờ xử lý**\n\n💡 Bạn không có yêu cầu rút tiền nào đang chờ admin xử lý.',
-        ephemeral: true
+        flags: 64
       });
     }
 
@@ -658,13 +661,13 @@ async function handleWithdrawStatusButton(interaction) {
       .setFooter({ text: 'Bạn sẽ được thông báo khi có kết quả' })
       .setTimestamp();
 
-    await interaction.reply({ embeds: [statusEmbed], ephemeral: true });
+    await interaction.reply({ embeds: [statusEmbed], flags: 64 });
 
   } catch (error) {
     console.error('Error checking withdraw status:', error);
     await interaction.reply({
       content: '❌ Có lỗi khi kiểm tra trạng thái!',
-      ephemeral: true
+      flags: 64
     });
   }
 }
@@ -680,7 +683,7 @@ async function handleWithdrawHistoryButton(interaction) {
     if (requests.length === 0) {
       return await interaction.reply({
         content: '📝 **Chưa có lịch sử giao dịch**\n\n💡 Bạn chưa thực hiện giao dịch đổi tiền nào.',
-        ephemeral: true
+        flags: 64
       });
     }
 
@@ -709,13 +712,13 @@ async function handleWithdrawHistoryButton(interaction) {
     }
 
     historyEmbed.setDescription(description);
-    await interaction.reply({ embeds: [historyEmbed], ephemeral: true });
+    await interaction.reply({ embeds: [historyEmbed], flags: 64 });
 
   } catch (error) {
     console.error('Error getting withdraw history:', error);
     await interaction.reply({
       content: '❌ Có lỗi khi lấy lịch sử!',
-      ephemeral: true
+      flags: 64
     });
   }
 }
@@ -740,14 +743,14 @@ async function handleWithdrawModalSubmit(interaction) {
     if (isNaN(amount) || amount < 50000 || amount > 1000000) {
       return await interaction.reply({
         content: '❌ **Số xu không hợp lệ!**\n\n💡 Số xu phải từ 50,000 đến 1,000,000.',
-        ephemeral: true
+        flags: 64
       });
     }
 
     if (!/^\d{6,20}$/.test(account)) {
       return await interaction.reply({
         content: '❌ **Số tài khoản không hợp lệ!**\n\n💡 Số tài khoản phải từ 6-20 chữ số.',
-        ephemeral: true
+        flags: 64
       });
     }
 
@@ -756,7 +759,7 @@ async function handleWithdrawModalSubmit(interaction) {
     if (!user) {
       return await interaction.reply({
         content: '❌ **Không tìm thấy tài khoản!**\n\n💡 Hãy sử dụng bot trước để tạo tài khoản.',
-        ephemeral: true
+        flags: 64
       });
     }
 
@@ -766,7 +769,7 @@ async function handleWithdrawModalSubmit(interaction) {
     if (user.balance < amount) {
       return await interaction.reply({
         content: `❌ **Số dư không đủ!**\n\n💰 **Số dư hiện tại**: ${user.balance.toLocaleString()} xu\n📤 **Số xu muốn rút**: ${amount.toLocaleString()} xu\n\n🎮 Hãy chơi game để kiếm thêm xu!`,
-        ephemeral: true
+        flags: 64
       });
     }
 
@@ -779,7 +782,7 @@ async function handleWithdrawModalSubmit(interaction) {
     if (pendingRequest) {
       return await interaction.reply({
         content: '⏳ **Bạn đã có yêu cầu đang chờ xử lý!**\n\n💡 Vui lòng đợi admin xử lý xong trước khi tạo yêu cầu mới.\n🔍 Dùng nút "Kiểm tra trạng thái" để xem tiến độ.',
-        ephemeral: true
+        flags: 64
       });
     }
 
@@ -844,14 +847,14 @@ async function handleWithdrawModalSubmit(interaction) {
       .setFooter({ text: 'Bạn sẽ được thông báo qua DM khi có kết quả' })
       .setTimestamp();
 
-    await interaction.reply({ embeds: [successEmbed], ephemeral: true });
+    await interaction.reply({ embeds: [successEmbed], flags: 64 });
     console.log('✅ Success response sent to user');
 
   } catch (error) {
     console.error('❌ Error in withdraw modal submit:', error);
     await interaction.reply({
       content: '❌ **Có lỗi xảy ra!**\n\n💡 Vui lòng thử lại sau hoặc liên hệ admin.',
-      ephemeral: true
+      flags: 64
     });
   }
 }
@@ -962,7 +965,7 @@ async function handleWithdrawButtons(interaction) {
   if (!isAdmin(interaction.user.id)) {
     return await interaction.reply({
       content: '❌ Bạn không có quyền thực hiện hành động này!',
-      ephemeral: true
+      flags: 64
     });
   }
 
@@ -975,14 +978,14 @@ async function handleWithdrawButtons(interaction) {
     if (!request) {
       return await interaction.reply({
         content: '❌ Không tìm thấy yêu cầu rút tiền!',
-        ephemeral: true
+        flags: 64
       });
     }
 
     if (request.status !== 'pending') {
       return await interaction.reply({
         content: '❌ Yêu cầu này đã được xử lý rồi!',
-        ephemeral: true
+        flags: 64
       });
     }
 
@@ -1076,7 +1079,7 @@ async function handleWithdrawButtons(interaction) {
         await interaction.reply({ 
           embeds: [qrData.embed],
           components: [quickTransferButton],
-          ephemeral: true 
+          flags: 64 
         });
         
         console.log('✅ QR response sent to admin');
@@ -1103,7 +1106,7 @@ async function handleWithdrawButtons(interaction) {
 
         await interaction.reply({ 
           embeds: [fallbackEmbed], 
-          ephemeral: true 
+          flags: 64 
         });
       }
 
@@ -1196,7 +1199,7 @@ async function handleWithdrawButtons(interaction) {
         detailEmbed.addFields({ name: '📝 Ghi chú', value: request.adminNote, inline: false });
       }
 
-      await interaction.reply({ embeds: [detailEmbed], ephemeral: true });
+      await interaction.reply({ embeds: [detailEmbed], flags: 64 });
     }
 
   } catch (error) {
@@ -1206,7 +1209,7 @@ async function handleWithdrawButtons(interaction) {
     
     await interaction.reply({
       content: `❌ **Có lỗi xảy ra khi xử lý yêu cầu!**\n\`\`\`${error.message}\`\`\``,
-      ephemeral: true
+      flags: 64
     });
   }
 }
@@ -1224,7 +1227,7 @@ async function handleVIPPurchase(interaction) {
     if (!tierInfo) {
       await interaction.reply({
         content: '❌ Gói VIP không hợp lệ!',
-        ephemeral: true
+        flags: 64
       });
       return;
     }
@@ -1234,7 +1237,7 @@ async function handleVIPPurchase(interaction) {
     if (!user) {
       await interaction.reply({
         content: '❌ Không tìm thấy thông tin user. Hãy sử dụng lệnh khác trước!',
-        ephemeral: true
+        flags: 64
       });
       return;
     }
@@ -1261,7 +1264,7 @@ async function handleVIPPurchase(interaction) {
         )
         .setTimestamp();
 
-      await interaction.reply({ embeds: [embed], ephemeral: true });
+      await interaction.reply({ embeds: [embed], flags: 64 });
       return;
     }
     
@@ -1298,14 +1301,14 @@ async function handleVIPPurchase(interaction) {
     await interaction.reply({ 
       embeds: [embed], 
       components: [confirmRow], 
-      ephemeral: true 
+      flags: 64
     });
     
   } catch (error) {
     console.error('VIP purchase error:', error);
     await interaction.reply({
       content: '❌ Có lỗi xảy ra khi xử lý mua VIP!',
-      ephemeral: true
+      flags: 64
     });
   }
 }
