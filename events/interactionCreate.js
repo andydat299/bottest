@@ -1239,7 +1239,14 @@ async function handleVIPPurchase(interaction) {
       return;
     }
     
-    const userMoney = user.money || 0;
+    // Kiểm tra tất cả các field có thể chứa coins
+    const userMoney = user.money || user.coins || user.balance || 0;
+    console.log(`Debug - User: ${interaction.user.username}, Money: ${userMoney}, Raw user:`, {
+      money: user.money,
+      coins: user.coins,
+      balance: user.balance
+    });
+    
     if (userMoney < tierInfo.price) {
       const shortfall = tierInfo.price - userMoney;
       const embed = new EmbedBuilder()
@@ -1314,7 +1321,9 @@ async function handleVIPConfirmation(interaction) {
     
     // Lấy user và kiểm tra lại coins
     const user = await User.findOne({ discordId: interaction.user.id });
-    const userMoney = user.money || 0;
+    const userMoney = user.money || user.coins || user.balance || 0;
+    
+    console.log(`Debug - Confirm purchase: User ${interaction.user.username}, Money: ${userMoney}`);
     
     if (userMoney < tierInfo.price) {
       await interaction.update({
@@ -1326,7 +1335,13 @@ async function handleVIPConfirmation(interaction) {
     }
     
     // Trừ tiền khỏi user (giữ logic userSchema cũ)
-    user.money = userMoney - tierInfo.price;
+    if (user.money !== undefined) {
+      user.money = userMoney - tierInfo.price;
+    } else if (user.coins !== undefined) {
+      user.coins = userMoney - tierInfo.price;
+    } else if (user.balance !== undefined) {
+      user.balance = userMoney - tierInfo.price;
+    }
     await user.save();
     
     // Mua VIP
@@ -1340,7 +1355,7 @@ async function handleVIPConfirmation(interaction) {
         .addFields(
           { name: '👑 VIP Tier', value: tierInfo.name, inline: true },
           { name: '⏱️ Thời hạn', value: tier === 'lifetime' ? 'Vĩnh viễn' : `${tierInfo.duration} ngày`, inline: true },
-          { name: '💳 Coins còn lại', value: `${user.money.toLocaleString()} coins`, inline: true },
+          { name: '💳 Coins còn lại', value: `${(userMoney - tierInfo.price).toLocaleString()} coins`, inline: true },
           { name: '🎁 Lợi ích VIP', value: 'VIP đã được kích hoạt! Sử dụng `/vip` để xem chi tiết.', inline: false }
         )
         .setFooter({ text: 'Cảm ơn bạn đã mua VIP!' })
