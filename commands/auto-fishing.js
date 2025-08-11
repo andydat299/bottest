@@ -106,6 +106,9 @@ export default {
         user[tempKey] = user.autoFishingToday.minutes;
       }
       
+      // Log để debug
+      console.log(`Auto-fishing time used: ${user.autoFishingToday.minutes}/${maxDuration} minutes for user ${interaction.user.username}`);
+      
       await user.save();
 
       // Đánh dấu user đang auto-fishing
@@ -185,7 +188,7 @@ export default {
         coinsEarned = Math.floor(coinsEarned * vipPerks.coinMultiplier);
 
         // Cập nhật coins cho user (sử dụng field xu thay vì money)
-        user.balance = (user.balance || 0) + coinsEarned;
+                user.balance = (user.balance || 0) + coinsEarned;
         user.fish = user.fish || new Map();
         
         // Import fishtype để sử dụng fish data thực

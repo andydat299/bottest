@@ -1250,12 +1250,11 @@ async function handleVIPPurchase(interaction) {
     }
     
     // Kiểm tra tất cả các field có thể chứa coins
-    const userMoney = user.balance || user.money || user.coins || user.balance || 0;
+    const userMoney = user.balance || user.money || user.coins || 0;
     console.log(`Debug - User: ${interaction.user.username}, Money: ${userMoney}, Raw user:`, {
-      xu: user.balance,
+      balance: user.balance,
       money: user.money,
-      coins: user.coins,
-      balance: user.balance
+      coins: user.coins
     });
     
     if (userMoney < tierInfo.price) {
@@ -1332,7 +1331,7 @@ async function handleVIPConfirmation(interaction) {
     
     // Lấy user và kiểm tra lại coins
     const user = await User.findOne({ discordId: interaction.user.id });
-    const userMoney = user.money || user.coins || user.balance || 0;
+    const userMoney = user.balance || user.money || user.coins || 0;
     
     console.log(`Debug - Confirm purchase: User ${interaction.user.username}, Money: ${userMoney}`);
     
@@ -1345,13 +1344,13 @@ async function handleVIPConfirmation(interaction) {
       return;
     }
     
-    // Trừ tiền khỏi user (giữ logic userSchema cũ)
-    if (user.money !== undefined) {
+    // Trừ tiền khỏi user (sử dụng field balance như hệ thống chính)
+    if (user.balance !== undefined) {
+      user.balance = userMoney - tierInfo.price;
+    } else if (user.money !== undefined) {
       user.money = userMoney - tierInfo.price;
     } else if (user.coins !== undefined) {
       user.coins = userMoney - tierInfo.price;
-    } else if (user.balance !== undefined) {
-      user.balance = userMoney - tierInfo.price;
     }
     await user.save();
     

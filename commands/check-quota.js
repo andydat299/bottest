@@ -73,7 +73,8 @@ export default {
         hasAutoFishingToday: !!user.autoFishingToday,
         autoFishingTodayData: user.autoFishingToday,
         hasFallbackField: !!user[`autofish_${todayKey}`],
-        fallbackValue: user[`autofish_${todayKey}`]
+        fallbackValue: user[`autofish_${todayKey}`],
+        userBalance: user.balance || user.money || user.coins || 0
       };
 
       if (process.env.NODE_ENV === 'development') {
