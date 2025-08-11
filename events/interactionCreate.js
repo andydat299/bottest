@@ -1250,8 +1250,9 @@ async function handleVIPPurchase(interaction) {
     }
     
     // Kiểm tra tất cả các field có thể chứa coins
-    const userMoney = user.money || user.coins || user.balance || 0;
+    const userMoney = user.balance || user.money || user.coins || user.balance || 0;
     console.log(`Debug - User: ${interaction.user.username}, Money: ${userMoney}, Raw user:`, {
+      xu: user.balance,
       money: user.money,
       coins: user.coins,
       balance: user.balance

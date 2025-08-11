@@ -184,8 +184,8 @@ export default {
         // Áp dụng VIP bonus
         coinsEarned = Math.floor(coinsEarned * vipPerks.coinMultiplier);
 
-        // Cập nhật coins cho user (giữ logic cũ)
-        user.money = (user.money || 0) + coinsEarned;
+        // Cập nhật coins cho user (sử dụng field xu thay vì money)
+        user.balance = (user.balance || 0) + coinsEarned;
         user.fish = user.fish || new Map();
         
         // Import fishtype để sử dụng fish data thực
