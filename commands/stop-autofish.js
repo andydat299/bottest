@@ -123,7 +123,7 @@ export default {
           { name: '💰 Tiền kiếm được', value: `${coinsEarned.toLocaleString()} xu`, inline: true },
           { name: '📊 Hiệu suất', value: `${elapsedMinutes > 0 ? Math.round(fishCaught / elapsedMinutes) : 0} cá/phút`, inline: true },
           { name: '👑 VIP Bonus', value: vipPerks ? `x${vipPerks.coinMultiplier} (${vipPerks.tier})` : 'Không có', inline: true },
-          { name: '💳 Số dư mới', value: `${(user?.balance || 0).toLocaleString()} xu`, inline: true }
+                    { name: '💳 Số dư mới', value: `${(user?.balance || 0).toLocaleString()} xu`, inline: true }
         )
         .setFooter({ text: 'Auto-fishing đã được dừng và kết quả đã được lưu' })
         .setTimestamp();
