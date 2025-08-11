@@ -39,8 +39,9 @@ export default {
       }
 
       // Cập nhật database
+      let caughtFish = {}; // Khởi tạo caughtFish ở đây
       const user = await User.findOne({ discordId: interaction.user.id });
-      if (user) {
+      if (user && fishCaught > 0) {
         // Cập nhật balance
         user.balance = (user.balance || 0) + coinsEarned;
         user.fish = user.fish || new Map();
@@ -56,7 +57,6 @@ export default {
           console.log('Không thể load fishtype, sử dụng default fish list');
         }
 
-        const caughtFish = {};
         for (let i = 0; i < fishCaught; i++) {
           let selectedFish;
           
@@ -105,6 +105,8 @@ export default {
         }
 
         await user.save();
+      } else if (!user) {
+        console.warn(`User not found in database: ${interaction.user.username} (${interaction.user.id})`);
       }
 
       // Xóa khỏi danh sách active
@@ -121,20 +123,22 @@ export default {
           { name: '💰 Tiền kiếm được', value: `${coinsEarned.toLocaleString()} xu`, inline: true },
           { name: '📊 Hiệu suất', value: `${elapsedMinutes > 0 ? Math.round(fishCaught / elapsedMinutes) : 0} cá/phút`, inline: true },
           { name: '👑 VIP Bonus', value: vipPerks ? `x${vipPerks.coinMultiplier} (${vipPerks.tier})` : 'Không có', inline: true },
-          { name: '💳 Số dư mới', value: `${user.balance.toLocaleString()} xu`, inline: true }
+          { name: '💳 Số dư mới', value: `${(user?.balance || 0).toLocaleString()} xu`, inline: true }
         )
         .setFooter({ text: 'Auto-fishing đã được dừng và kết quả đã được lưu' })
         .setTimestamp();
 
       // Hiển thị top 3 loại cá đã câu (nếu có)
-      if (Object.keys(caughtFish).length > 0) {
+      if (fishCaught > 0 && Object.keys(caughtFish).length > 0) {
         const topFish = Object.entries(caughtFish)
           .sort((a, b) => b[1] - a[1])
           .slice(0, 3)
           .map(([fish, count]) => `${fish}: ${count} con`)
           .join('\n');
         
-        embed.addFields({ name: '🎣 Top cá đã câu', value: topFish, inline: false });
+        if (topFish) {
+          embed.addFields({ name: '🎣 Top cá đã câu', value: topFish, inline: false });
+        }
       }
 
       await interaction.reply({ embeds: [embed] });
