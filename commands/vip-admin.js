@@ -213,7 +213,7 @@ async function handleAddVIP(interaction) {
   } catch (error) {
     console.error('Error adding VIP:', error);
     await interaction.reply({
-      content: `❌ Có lỗi xảy ra khi thêm VIP: \`${error.message}\`",
+      content: `❌ Có lỗi xảy ra khi thêm VIP: \`${error.message}\``,
       flags: 64
     });
   }
@@ -279,7 +279,7 @@ async function handleRemoveVIP(interaction) {
   } catch (error) {
     console.error('Error removing VIP:', error);
     await interaction.reply({
-      content: `❌ Có lỗi xảy ra khi xóa VIP: \`${error.message}\`",
+      content: `❌ Có lỗi xảy ra khi xóa VIP: \`${error.message}\``,
       flags: 64
     });
   }
@@ -336,7 +336,7 @@ async function handleCheckVIP(interaction) {
   } catch (error) {
     console.error('Error checking VIP:', error);
     await interaction.reply({
-      content: `❌ Có lỗi xảy ra khi kiểm tra VIP: \`${error.message}\`",
+      content: `❌ Có lỗi xảy ra khi kiểm tra VIP: \`${error.message}\``,
       flags: 64
     });
   }
@@ -384,7 +384,7 @@ async function handleExtendVIP(interaction) {
   } catch (error) {
     console.error('Error extending VIP:', error);
     await interaction.reply({
-      content: `❌ Có lỗi xảy ra khi gia hạn VIP: \`${error.message}\`",
+      content: `❌ Có lỗi xảy ra khi gia hạn VIP: \`${error.message}\``,
       flags: 64
     });
   }
