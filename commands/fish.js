@@ -207,7 +207,7 @@ export default {
         user.fishingStats.totalFishingAttempts = (user.fishingStats.totalFishingAttempts || 0) + 1;
 
         // Tính tỷ lệ câu hụt với các hệ số môi trường và sự kiện
-        const baseMissRate = 0.20; // 20% cơ bản
+        const baseMissRate = 0.4; // 20% cơ bản
         const rodLevel = user.rodLevel || 1;
         const missRateReduction = (rodLevel - 1) * 0.02; // Giảm 2% mỗi level
         let finalMissRate = Math.max(baseMissRate - missRateReduction, 0.05); // Tối thiểu 5%
@@ -232,7 +232,7 @@ export default {
         }
         
         finalMissRate = Math.min(finalMissRate, 0.85); // Tối đa 85% hụt (tăng từ 80%)
-        finalMissRate = Math.max(finalMissRate, 0.02); // Tối thiểu 2%
+        finalMissRate = Math.max(finalMissRate, 0.4); // Tối thiểu 2%
         
         const missRatePercent = (finalMissRate * 100).toFixed(1);
         
