@@ -69,9 +69,9 @@ async function showRepairMenu(interaction, user) {
   const partialRepairTarget = Math.min(currentDurability + Math.floor(maxDurability * 0.5), maxDurability);
   const minimalRepairTarget = Math.min(currentDurability + Math.floor(maxDurability * 0.25), maxDurability);
 
-  const fullCost = 75;      // Hoàn toàn (100%)
-  const partialCost = 50;   // Một phần (50%)  
-  const minimalCost = 25;   // Tối thiểu (25%)
+  const fullCost = 2000;      // Hoàn toàn (100%)
+  const partialCost = 1500;   // Một phần (50%)  
+  const minimalCost = 1000;   // Tối thiểu (25%)
 
   const embed = new EmbedBuilder()
     .setColor('#FFA500')
@@ -85,7 +85,7 @@ async function showRepairMenu(interaction, user) {
       },
       {
         name: '🔧 Tùy chọn sửa chữa',
-        value: `**🟢 Hoàn toàn (100%):** 75 xu\n**🟡 Một phần (50%):** 50 xu\n**🟠 Tối thiểu (25%):** 25 xu`,
+        value: `**🟢 Hoàn toàn (100%):** 2000 xu\n**🟡 Một phần (50%):** 1500 xu\n**🟠 Tối thiểu (25%):** 1000 xu`,
         inline: false
       }
     )
@@ -99,19 +99,19 @@ async function showRepairMenu(interaction, user) {
     .addComponents(
       new ButtonBuilder()
         .setCustomId('repair_full')
-        .setLabel(`Hoàn toàn (75 xu)`)
-        .setStyle(user.balance >= 75 ? ButtonStyle.Success : ButtonStyle.Danger)
-        .setDisabled(user.balance < 75),
+        .setLabel(`Hoàn toàn (2000 xu)`)
+        .setStyle(user.balance >= 2000 ? ButtonStyle.Success : ButtonStyle.Danger)
+        .setDisabled(user.balance < 2000),
       new ButtonBuilder()
         .setCustomId('repair_partial')
-        .setLabel(`Một phần (50 xu)`)
-        .setStyle(user.balance >= 50 ? ButtonStyle.Primary : ButtonStyle.Danger)
-        .setDisabled(user.balance < 50),
+        .setLabel(`Một phần (1500 xu)`)
+        .setStyle(user.balance >= 1500 ? ButtonStyle.Primary : ButtonStyle.Danger)
+        .setDisabled(user.balance < 1500),
       new ButtonBuilder()
         .setCustomId('repair_minimal')
-        .setLabel(`Tối thiểu (25 xu)`)
-        .setStyle(user.balance >= 25 ? ButtonStyle.Secondary : ButtonStyle.Danger)
-        .setDisabled(user.balance < 25)
+        .setLabel(`Tối thiểu (1000 xu)`)
+        .setStyle(user.balance >= 1000 ? ButtonStyle.Secondary : ButtonStyle.Danger)
+        .setDisabled(user.balance < 1000)
     );
 
   const msg = await interaction.reply({ 
@@ -152,17 +152,17 @@ async function handleRepair(interaction, user, repairType) {
   switch (repairType) {
     case 'full':
       repairAmount = maxDurability - currentDurability;
-      cost = 75; // Hoàn toàn (100%)
+      cost = 2000; // Hoàn toàn (100%)
       repairPercent = 100;
       break;
     case 'partial':
       repairAmount = Math.floor(maxDurability * 0.5);
-      cost = 50; // Một phần (50%)
+      cost = 1500; // Một phần (50%)
       repairPercent = 50;
       break;
     case 'minimal':
       repairAmount = Math.floor(maxDurability * 0.25);
-      cost = 25; // Tối thiểu (25%)
+      cost = 1000; // Tối thiểu (25%)
       repairPercent = 25;
       break;
     default:

@@ -1,4 +1,4 @@
-ện tôi import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
+import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
 import { getRepairCost, getAllRepairCosts, getDurabilityColor, getDurabilityEmoji } from '../utils/repairUtils.js';
 
 export default {
