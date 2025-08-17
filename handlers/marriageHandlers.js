@@ -1,5 +1,6 @@
 import { EmbedBuilder } from 'discord.js';
 import mongoose from 'mongoose';
+import { safeEditReply, safeReply } from '../utils/interactionHelpers.js';
 
 export async function handleMarriageButtons(interaction) {
   try {
@@ -39,7 +40,7 @@ async function handleProposalAccept(interaction) {
   const proposal = await proposalsCollection.findOne({ _id: new mongoose.Types.ObjectId(proposalId) });
 
   if (!proposal) {
-    await interaction.followUp({
+    await safeReply(interaction, {
       content: '❌ **Không tìm thấy lời cầu hôn!**',
       ephemeral: true
     });
@@ -48,7 +49,7 @@ async function handleProposalAccept(interaction) {
 
   // Verify the person accepting is the partner
   if (proposal.partnerId !== interaction.user.id) {
-    await interaction.followUp({
+    await safeReply(interaction, {
       content: '❌ **Chỉ người được cầu hôn mới có thể chấp nhận!**',
       ephemeral: true
     });
@@ -57,7 +58,7 @@ async function handleProposalAccept(interaction) {
 
   // Check if proposal is still valid
   if (proposal.status !== 'pending' || new Date() > new Date(proposal.expiresAt)) {
-    await interaction.followUp({
+    await safeReply(interaction, {
       content: '❌ **Lời cầu hôn đã hết hạn hoặc không còn hiệu lực!**',
       ephemeral: true
     });
@@ -76,7 +77,7 @@ async function handleProposalAccept(interaction) {
   });
 
   if (existingMarriage) {
-    await interaction.followUp({
+    await safeReply(interaction, {
       content: '❌ **Một trong hai người đã kết hôn rồi!**',
       ephemeral: true
     });
@@ -148,8 +149,8 @@ async function handleProposalAccept(interaction) {
     .setFooter({ text: 'Tình yêu mãi mãi! ❤️' })
     .setTimestamp();
 
-  // Update original message
-  await interaction.editReply({
+  // Update original message using safe edit
+  await safeEditReply(interaction, {
     content: '🎉 **Đám cưới thành công!**',
     embeds: [marriageEmbed],
     components: [] // Remove buttons
@@ -189,7 +190,7 @@ async function handleProposalReject(interaction) {
   const proposal = await proposalsCollection.findOne({ _id: new mongoose.Types.ObjectId(proposalId) });
 
   if (!proposal) {
-    await interaction.followUp({
+    await safeReply(interaction, {
       content: '❌ **Không tìm thấy lời cầu hôn!**',
       ephemeral: true
     });
@@ -198,7 +199,7 @@ async function handleProposalReject(interaction) {
 
   // Verify the person rejecting is the partner
   if (proposal.partnerId !== interaction.user.id) {
-    await interaction.followUp({
+    await safeReply(interaction, {
       content: '❌ **Chỉ người được cầu hôn mới có thể từ chối!**',
       ephemeral: true
     });
@@ -229,8 +230,8 @@ async function handleProposalReject(interaction) {
     .setFooter({ text: 'Tình yêu cần thời gian...' })
     .setTimestamp();
 
-  // Update original message
-  await interaction.editReply({
+  // Update original message using safe edit
+  await safeEditReply(interaction, {
     content: '💔 **Lời cầu hôn đã bị từ chối.**',
     embeds: [rejectionEmbed],
     components: [] // Remove buttons
@@ -270,7 +271,7 @@ async function handleDivorceConfirm(interaction) {
   const marriage = await marriagesCollection.findOne({ _id: new mongoose.Types.ObjectId(marriageId) });
 
   if (!marriage || marriage.status !== 'active') {
-    await interaction.followUp({
+    await safeReply(interaction, {
       content: '❌ **Không tìm thấy cuộc hôn nhân hoặc đã ly hôn!**',
       ephemeral: true
     });
@@ -279,7 +280,7 @@ async function handleDivorceConfirm(interaction) {
 
   // Verify the person divorcing is part of the marriage
   if (marriage.partner1 !== interaction.user.id && marriage.partner2 !== interaction.user.id) {
-    await interaction.followUp({
+    await safeReply(interaction, {
       content: '❌ **Bạn không phải là thành viên của cuộc hôn nhân này!**',
       ephemeral: true
     });
@@ -350,7 +351,7 @@ async function handleDivorceConfirm(interaction) {
     .setFooter({ text: 'Cuộc sống tiếp tục...' })
     .setTimestamp();
 
-  await interaction.editReply({
+  await safeEditReply(interaction, {
     embeds: [divorceEmbed],
     components: [] // Remove buttons
   });
@@ -387,7 +388,7 @@ async function handleDivorceCancel(interaction) {
       { name: '💡 Lời khuyên', value: 'Hãy cố gắng hàn gắn và giữ gìn tình yêu!', inline: false }
     );
 
-  await interaction.editReply({
+  await safeEditReply(interaction, {
     embeds: [cancelEmbed],
     components: [] // Remove buttons
   });
