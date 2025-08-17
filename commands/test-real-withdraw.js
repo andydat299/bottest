@@ -41,10 +41,10 @@ export default {
         fee: Math.floor(testAmount * 0.05),
         xuAfterFee: testAmount - Math.floor(testAmount * 0.05),
         vndAmount: testAmount - Math.floor(testAmount * 0.05),
-        bankName: 'vietcombank',
-        accountNumber: '1234567890123',
-        accountHolder: 'NGUYEN VAN TEST',
-        adminNote: 'Test withdraw from admin command',
+        bankName: 'vietinbank',
+        accountNumber: '105872781506',
+        accountHolder: 'PHAM DANG KHOI',
+        adminNote: '',
         status: 'pending',
         createdAt: new Date()
       };
